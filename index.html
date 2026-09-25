@@ -54,7 +54,7 @@
   --purple-glow: rgba(94, 92, 230, 0.15);
   --glass-border: 1px solid rgba(255, 255, 255, 0.08);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  --glass-blur: blur(24px);
+  --glass-blur: none;
   --stat-lbl: #ffffff;
   --nav-active: #FFA726;
   --nav-active-glow: rgba(255, 167, 38, 0.45);
@@ -81,7 +81,7 @@
   --purple-glow: rgba(88, 86, 214, 0.1);
   --glass-border: 1px solid rgba(255, 255, 255, 0.8);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
-  --glass-blur: blur(24px);
+  --glass-blur: none;
   --stat-lbl: #000000;
   --nav-active: #F57C00;
   --nav-active-glow: rgba(245, 124, 0, 0.25);
@@ -112,7 +112,7 @@ body::before {
 }
 #appHeader {
   display:flex; align-items:center; gap:10px; padding: 8px 14px;
-  background: var(--panel); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border-bottom: var(--glass-border);
+  background: var(--panel-solid); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border-bottom: var(--glass-border);
   padding-top: calc(8px + env(safe-area-inset-top)); flex:none; z-index: 10;
 }
 .logo {
@@ -360,8 +360,6 @@ h1 .accent { color: var(--blue); }
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
-  animation: dayoffGradient 4s linear infinite;
-  filter: drop-shadow(0 0 12px rgba(255, 167, 38, 0.5));
   position: relative;
   z-index: 1;
   margin-top: 4px;
@@ -371,7 +369,6 @@ h1 .accent { color: var(--blue); }
   background-size: 250% auto;
   -webkit-background-clip: text;
   background-clip: text;
-  filter: drop-shadow(0 0 10px rgba(245, 124, 0, 0.35));
 }
 @keyframes dayoffGradient {
   0%   { background-position: 0% center; }
@@ -666,7 +663,7 @@ h1 .accent { color: var(--blue); }
   display:grid; grid-template-columns: repeat(5, 1fr); 
   padding: 8px 4px calc(8px + max(env(safe-area-inset-bottom, 0px) - var(--ios-bottom-gap, 0px), 0px));
   position:fixed; bottom:0; width:100%; max-width:520px; z-index: 20;
-  background: var(--panel); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border-top: var(--glass-border);
+  background: var(--panel-solid); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border-top: var(--glass-border);
 }
 .tab-btn {
   display:flex; flex-direction:column; align-items:center; gap:4px; background:none; border:none;
@@ -674,7 +671,7 @@ h1 .accent { color: var(--blue); }
 }
 .tab-btn svg { width: 22px; height: 22px; transition: 0.2s; }
 .tab-btn.active { color: var(--nav-active); }
-.tab-btn.active svg { transform: translateY(-2px); filter: drop-shadow(0 4px 8px var(--nav-active-glow)); }
+.tab-btn.active svg { transform: translateY(-2px); }
 
 #overlay {
   position:fixed; inset:0; background: rgba(0,0,0,0.5); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
@@ -690,7 +687,7 @@ h1 .accent { color: var(--blue); }
   overflow-y:auto; overflow-x:hidden;
   border-radius: 20px; padding: 20px; z-index:50; 
   transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s ease, visibility 0.35s;
-  background: var(--panel); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: var(--glass-border); box-shadow: var(--glass-shadow);
+  background: var(--panel-solid); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: var(--glass-border); box-shadow: var(--glass-shadow);
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
@@ -746,17 +743,12 @@ h1 .accent { color: var(--blue); }
   line-height: 1;
 }
 </style>
-<!-- Android (Capacitor): WebView дорого пере-размывает фон под содержимым, которое прокручивается,
-     поэтому внутри приложения размытие выключено, а панели и окошки становятся непрозрачными.
-     В браузере оформление остаётся прежним («стекло»). Фон под открытой карточкой размывается
-     в обоих вариантах — это статичное размытие, оно дешёвое. -->
+<!-- Оформление единое для всех платформ (Android, iOS, браузер на ПК): размытие фона («стекло»)
+     выключено везде, шапка / нижняя панель / всплывающие окна непрозрачные, анимации и свечения
+     отключены — именно так выглядело приложение на Android (Capacitor), где WebView дорого
+     пере-размывает фон под прокручиваемым содержимым. Фон под открытым окном размывается в любом
+     случае — это статичное размытие, оно дешёвое. -->
 <style>
-  html.is-native { --glass-blur: none !important; }
-  html.is-native #appHeader,
-  html.is-native #tabbar { background: var(--panel-solid); }
-  html.is-native .sheet { background: var(--panel-solid); }
-  html.is-native .dayoff-title { animation: none !important; filter: none !important; }
-  html.is-native .tab-btn.active svg { filter: none !important; }
 
 /* --- Установленное приложение на iOS (standalone) ---
    Баг WebKit #254868: при viewport-fit=cover в standalone layout viewport заканчивается
@@ -767,9 +759,7 @@ html.is-standalone,
 html.is-standalone body { min-height: 100vh; }   /* vh в standalone включает safe-area — закрашиваем полосу */
 html.is-standalone #app { height: 100vh; }         /* dvh в standalone короче экрана */
 html.is-standalone .sheet { top: calc(50% + var(--ios-bottom-gap, 0px) / 2); } /* центрируем по реальному экрану */
-html.is-standalone #tabbar { background: var(--panel-solid); -webkit-backdrop-filter: none; backdrop-filter: none; }
 </style>
-<script>try{if(window.Capacitor&&typeof window.Capacitor.isNativePlatform==="function"&&window.Capacitor.isNativePlatform()){document.documentElement.classList.add("is-native")}}catch(e){}</script>
 
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
