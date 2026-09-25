@@ -662,6 +662,10 @@ h1 .accent { color: var(--blue); }
 #tabbar {
   display:grid; grid-template-columns: repeat(5, 1fr); 
   padding: 8px 4px calc(8px + max(env(safe-area-inset-bottom, 0px) - var(--ios-bottom-gap, 0px), 0px));
+  /* Боковые отступы: плотнее, чем было (4px), но не меньше 20px и не меньше safe-area —
+     иначе крайние иконки на iPhone заезжают под скруглённые углы экрана и обрезаются. */
+  padding-left: max(env(safe-area-inset-left, 0px), 20px);
+  padding-right: max(env(safe-area-inset-right, 0px), 20px);
   position:fixed; bottom:0; width:100%; max-width:520px; z-index: 20;
   background: var(--panel-solid); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border-top: var(--glass-border);
 }
