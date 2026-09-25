@@ -3,9 +3,33 @@
 <head>
 <script>try{document.documentElement.dataset.theme=localStorage.getItem("nail_theme")||"dark"}catch(e){}</script>
 <meta charset="UTF-8">
+<script>
+/* iOS standalone (приложение с домашнего экрана): viewport «лжёт» — layout viewport
+   заканчивается над home indicator, но env(safe-area-inset-bottom) всё равно отдаёт
+   полный отступ (WebKit bug 254868). Измеряем реальный зазор и гасим двойной отступ
+   в нижней панели, а страницу растягиваем на весь экран (vh в standalone включает safe-area). */
+(function () {
+  try {
+    var standalone = (navigator.standalone === true) ||
+      (window.matchMedia && (window.matchMedia('(display-mode: standalone)').matches ||
+                              window.matchMedia('(display-mode: fullscreen)').matches));
+    if (!standalone) return;
+    document.documentElement.classList.add('is-standalone');
+    var measure = function () {
+      var screenH = (window.screen && screen.height) || 0;
+      var viewH = document.documentElement.clientHeight || 0;
+      var gap = (screenH > viewH) ? (screenH - viewH) : 0;
+      document.documentElement.style.setProperty('--ios-bottom-gap', gap + 'px');
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    window.addEventListener('orientationchange', measure);
+  } catch (e) {}
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" id="metaTheme" content="#18161a">
-<title>Мастер маникюра</title>
+<title>Мастер&#160;маникюра</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
@@ -503,6 +527,30 @@ h1 .accent { color: var(--blue); }
 }
 .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--blue); }
 
+/* Safari/iOS: поля type="time"/"date" рисуются как inline-flex и игнорируют width:100% —
+   из-за этого «уезжают» за правый край шторки. display:block возвращает ширину 100%,
+   appearance:none убирает нативный слой Safari, который рисуется шире бокса и не режется
+   overflow:hidden родителя. */
+.field input[type="time"],
+.field input[type="date"],
+.field input[type="datetime-local"] {
+  display: block; -webkit-appearance: none; appearance: none; text-align: left;
+}
+/* Собственные отступы внутренних частей (shadow DOM) ломают высоту поля в Safari */
+.field input[type="time"]::-webkit-datetime-edit,
+.field input[type="time"]::-webkit-datetime-edit-fields-wrapper,
+.field input[type="time"]::-webkit-datetime-edit-text,
+.field input[type="time"]::-webkit-datetime-edit-hour-field,
+.field input[type="time"]::-webkit-datetime-edit-minute-field,
+.field input[type="date"]::-webkit-datetime-edit,
+.field input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+.field input[type="date"]::-webkit-datetime-edit-text,
+.field input[type="date"]::-webkit-datetime-edit-day-field,
+.field input[type="date"]::-webkit-datetime-edit-month-field,
+.field input[type="date"]::-webkit-datetime-edit-year-field { padding: 0; }
+.field input[type="time"]::-webkit-inner-spin-button,
+.field input[type="date"]::-webkit-inner-spin-button { height: auto; }
+
 .status-btn {
   padding: 10px 12px;
   font: 500 14px system-ui, -apple-system, Roboto, sans-serif;
@@ -616,7 +664,7 @@ h1 .accent { color: var(--blue); }
 
 #tabbar {
   display:grid; grid-template-columns: repeat(5, 1fr); 
-  padding: 8px 4px calc(8px + env(safe-area-inset-bottom));
+  padding: 8px 4px calc(8px + max(env(safe-area-inset-bottom, 0px) - var(--ios-bottom-gap, 0px), 0px));
   position:fixed; bottom:0; width:100%; max-width:520px; z-index: 20;
   background: var(--panel); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border-top: var(--glass-border);
 }
@@ -709,6 +757,17 @@ h1 .accent { color: var(--blue); }
   html.is-native .sheet { background: var(--panel-solid); }
   html.is-native .dayoff-title { animation: none !important; filter: none !important; }
   html.is-native .tab-btn.active svg { filter: none !important; }
+
+/* --- Установленное приложение на iOS (standalone) ---
+   Баг WebKit #254868: при viewport-fit=cover в standalone layout viewport заканчивается
+   над home indicator, но env(safe-area-inset-bottom) всё равно возвращает полный отступ.
+   Из-за этого панель уезжает вверх, а под ней остаётся чёрная полоса.
+   --ios-bottom-gap измеряется скриптом в <head> (screen.height − clientHeight). */
+html.is-standalone,
+html.is-standalone body { min-height: 100vh; }   /* vh в standalone включает safe-area — закрашиваем полосу */
+html.is-standalone #app { height: 100vh; }         /* dvh в standalone короче экрана */
+html.is-standalone .sheet { top: calc(50% + var(--ios-bottom-gap, 0px) / 2); } /* центрируем по реальному экрану */
+html.is-standalone #tabbar { background: var(--panel-solid); -webkit-backdrop-filter: none; backdrop-filter: none; }
 </style>
 <script>try{if(window.Capacitor&&typeof window.Capacitor.isNativePlatform==="function"&&window.Capacitor.isNativePlatform()){document.documentElement.classList.add("is-native")}}catch(e){}</script>
 
@@ -718,7 +777,8 @@ h1 .accent { color: var(--blue); }
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Мастер маникюра">
+<meta name="apple-mobile-web-app-title" content="Мастер&#160;маникюра">
+<meta name="application-name" content="Мастер маникюра">
 </head>
 <body>
 <div id="app">
