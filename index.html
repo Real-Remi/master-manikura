@@ -394,12 +394,23 @@ h1 .accent { color: var(--blue); }
 }
 
 .search { position:relative; margin-bottom: 14px; }
-.search svg { position:absolute; left:12px; top:11px; width:16px; height:16px; color:var(--dim); z-index: 2;}
+.search > svg { position:absolute; left:12px; top:11px; width:16px; height:16px; color:var(--dim); z-index: 2;}
 .search input {
-  padding: 10px 14px 10px 38px; font-size: 14px; color: var(--ink); outline: none; transition: 0.2s; width: 100%; border-radius: 12px;
+  padding: 10px 38px 10px 38px; font-size: 14px; color: var(--ink); outline: none; transition: 0.2s; width: 100%; border-radius: 12px;
   background: var(--panel2); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: var(--glass-border);
 }
 .search input:focus { border-color: var(--blue); }
+/* Крестик очистки поиска: появляется, только когда в поле есть текст */
+.search-clear {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  width: 24px; height: 24px; border: none; border-radius: 50%;
+  display: grid; place-items: center; padding: 0; cursor: pointer;
+  color: var(--dim); background: var(--panel2); z-index: 3;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+.search-clear svg { position: static; width: 13px; height: 13px; }
+.search-clear:active { color: var(--ink); background: var(--line); }
+.search-clear[hidden] { display: none; }
 
 .cal-card { 
   border-radius: 16px; padding: 10px; 
@@ -513,6 +524,39 @@ h1 .accent { color: var(--blue); }
 .btn-danger { background: var(--red); color: #ffffff; box-shadow: none; border: none;}
 .btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
 .btn:disabled:active { transform: none; }
+
+/* --- Переключатель настроек (--glass и т.п.) --- */
+.opt-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 4px 0;
+}
+.opt-row .opt-txt { min-width: 0; }
+.opt-row .opt-title { font: 600 14px system-ui, -apple-system, Roboto, sans-serif; color: var(--ink); }
+.opt-row .opt-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.switch {
+  position: relative; flex: none; width: 48px; height: 29px;
+  border-radius: 999px; border: 1px solid var(--glass-border);
+  background: var(--panel2); cursor: pointer; padding: 0;
+  transition: background 0.2s, border-color 0.2s;
+}
+.switch::after {
+  content: ""; position: absolute; top: 2px; left: 2px;
+  width: 23px; height: 23px; border-radius: 50%;
+  background: var(--muted); box-shadow: 0 1px 3px rgba(0,0,0,0.35);
+  transition: transform 0.2s, background 0.2s;
+}
+.switch.on { background: var(--blue); border-color: var(--blue); }
+.switch.on::after { transform: translateX(19px); background: var(--on-accent); }
+.switch:active::after { width: 26px; }
+.switch.on:active::after { transform: translateX(16px); }
+
+/* Стекло только для нижней панели (переключатель в разделе «Данные») */
+html.tabbar-glass #tabbar {
+  background: var(--panel);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+}
+html.tabbar-glass #tabbar .tab-btn { position: relative; z-index: 1; }
 
 #btnCalendarAdd { font-size: 16px; font-weight: 800; padding: 14px; }
 
@@ -815,6 +859,9 @@ html.is-standalone #tabbar {
       <div class="search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
         <input type="text" id="searchInput" placeholder="Поиск по имени или телефону...">
+        <button type="button" class="search-clear" id="searchClear" hidden aria-label="Очистить поиск">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
       </div>
 
       <div class="scr-title" id="homeListTitle" style="margin-top:4px;">Ближайшие записи</div>
@@ -902,8 +949,24 @@ html.is-standalone #tabbar {
       <div class="scr-title">Настройки и Данные</div>
       <div class="cal-card">
         <div class="field">
+          <label style="color: var(--stat-lbl);">Оформление</label>
+          <div class="opt-row">
+            <div class="opt-txt">
+              <div class="opt-title">Стекло в нижней панели</div>
+              <div class="opt-desc">Полупрозрачная панель со значками с размытием фона</div>
+            </div>
+            <button type="button" class="switch" id="glassSwitch" role="switch" aria-checked="false" aria-label="Стекло в нижней панели" onclick="toggleTabbarGlass()"></button>
+          </div>
+        </div>
+      </div>
+      <div class="cal-card" style="margin-top:10px;">
+        <div class="field">
           <label style="color: var(--stat-lbl);">Резервное копирование</label>
           <span style="font-size:12px; color:var(--dim); margin-bottom:8px;">Скачайте или загрузите базу клиентов.</span>
+          <div id="backupInfo" style="font-size:12px; color:var(--muted); background:var(--panel2); border:var(--glass-border); border-radius:10px; padding:9px 12px; margin-bottom:8px; display:flex; align-items:center; gap:7px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px; flex:none;"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <span id="backupInfoText">Последнее сохранение: ещё не было</span>
+          </div>
           <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:6px;">
             <button class="btn" onclick="exportData()">Скачать</button>
             <button class="btn" id="btnImport">Загрузить</button>
@@ -1353,7 +1416,10 @@ function switchScreen(index, fromHistory) {
   }
 
   var searchEl = el('searchInput');
-  if (searchEl && searchEl.value) searchEl.value = '';
+  if (searchEl && searchEl.value) {
+    searchEl.value = '';
+    if (typeof syncSearchClear === 'function') syncSearchClear();
+  }
   
   document.querySelectorAll('.tab-btn').forEach(function(b) { 
     b.classList.toggle('active', b.dataset.screen === targetScreen); 
@@ -1583,6 +1649,21 @@ function renderHome() {
   el('recordsList').innerHTML = listHTML;
 }
 el('searchInput').addEventListener('input', renderHome);
+
+/* Крестик очистки поиска: показывается, только когда в поле есть текст */
+function syncSearchClear() {
+  const btn = el('searchClear');
+  if (btn) btn.hidden = !el('searchInput').value;
+}
+el('searchInput').addEventListener('input', syncSearchClear);
+el('searchClear').addEventListener('click', function() {
+  const input = el('searchInput');
+  input.value = '';
+  syncSearchClear();
+  renderHome();
+  input.focus();
+});
+syncSearchClear();
 
 function renderCalendar() {
   const months = MONTHS_NAMES;
@@ -2763,6 +2844,74 @@ el('btnDeleteService').onclick = function() {
   }
 };
 
+/* --- Переключатель «стекло в нижней панели» --- */
+const GLASS_KEY = 'nail_tabbar_glass';
+function applyTabbarGlass() {
+  let on = false;
+  try { on = localStorage.getItem(GLASS_KEY) === '1'; } catch (e) {}
+  document.documentElement.classList.toggle('tabbar-glass', on);
+  const sw = el('glassSwitch');
+  if (sw) {
+    sw.classList.toggle('on', on);
+    sw.setAttribute('aria-checked', on ? 'true' : 'false');
+  }
+}
+window.toggleTabbarGlass = function() {
+  const on = !document.documentElement.classList.contains('tabbar-glass');
+  document.documentElement.classList.toggle('tabbar-glass', on);
+  const sw = el('glassSwitch');
+  if (sw) {
+    sw.classList.toggle('on', on);
+    sw.setAttribute('aria-checked', on ? 'true' : 'false');
+  }
+  try { localStorage.setItem(GLASS_KEY, on ? '1' : '0'); } catch (e) {}
+};
+applyTabbarGlass();
+
+/* --- Последнее резервное копирование --- */
+const BACKUP_KEY = 'nail_last_backup';
+function pluralRecords(n) {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return n + ' запись';
+  if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return n + ' записи';
+  return n + ' записей';
+}
+function formatBackupStamp(ts) {
+  const d = new Date(ts);
+  if (isNaN(d.getTime())) return '';
+  const pad = (v) => String(v).padStart(2, '0');
+  const now = new Date();
+  const time = pad(d.getHours()) + ':' + pad(d.getMinutes());
+  const sameDay = d.getFullYear() === now.getFullYear() &&
+                  d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+  if (sameDay) return 'сегодня в ' + time;
+
+  const y = new Date(now.getTime() - 86400000);
+  const isYesterday = d.getFullYear() === y.getFullYear() &&
+                      d.getMonth() === y.getMonth() && d.getDate() === y.getDate();
+  if (isYesterday) return 'вчера в ' + time;
+
+  const months = ['января','февраля','марта','апреля','мая','июня','июля',
+                  'августа','сентября','октября','ноября','декабря'];
+  return d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear() + ', ' + time;
+}
+function renderBackupInfo() {
+  const out = el('backupInfoText');
+  if (!out) return;
+  let ts = 0;
+  try { ts = parseInt(localStorage.getItem(BACKUP_KEY) || '0', 10) || 0; } catch (e) {}
+  if (!ts) {
+    out.textContent = 'Последнее сохранение: ещё не было';
+    return;
+  }
+  out.textContent = 'Последнее сохранение: ' + formatBackupStamp(ts) +
+                    ' · ' + pluralRecords(records.length);
+}
+function markBackupSaved() {
+  try { localStorage.setItem(BACKUP_KEY, String(Date.now())); } catch (e) {}
+  renderBackupInfo();
+}
+
 window.exportData = function() {
   try {
     const data = { records: records, services: services, exportedAt: new Date().toISOString() };
@@ -2777,6 +2926,7 @@ window.exportData = function() {
     a.click();
     document.body.removeChild(a);
     setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+    markBackupSaved();
   } catch(err) {
     alert('Не удалось сохранить файл: ' + err.message);
   }
@@ -2816,6 +2966,7 @@ window.clearData = function() {
       services = [];
       localStorage.removeItem('nail_records');
       localStorage.removeItem('nail_services');
+      try { localStorage.removeItem(BACKUP_KEY); } catch (e) {}
       renderAll();
     }
   );
@@ -2826,6 +2977,7 @@ function renderAll() {
   renderCalendar();
   renderMoney();
   renderPrice();
+  renderBackupInfo();
 }
 
 setFormStatus('plan');
