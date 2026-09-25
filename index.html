@@ -394,12 +394,23 @@ h1 .accent { color: var(--blue); }
 }
 
 .search { position:relative; margin-bottom: 14px; }
-.search svg { position:absolute; left:12px; top:11px; width:16px; height:16px; color:var(--dim); z-index: 2;}
+.search > svg { position:absolute; left:12px; top:11px; width:16px; height:16px; color:var(--dim); z-index: 2;}
 .search input {
-  padding: 10px 14px 10px 38px; font-size: 14px; color: var(--ink); outline: none; transition: 0.2s; width: 100%; border-radius: 12px;
+  padding: 10px 38px 10px 38px; font-size: 14px; color: var(--ink); outline: none; transition: 0.2s; width: 100%; border-radius: 12px;
   background: var(--panel2); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: var(--glass-border);
 }
 .search input:focus { border-color: var(--blue); }
+/* Крестик очистки поиска: появляется, только когда в поле есть текст */
+.search-clear {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  width: 24px; height: 24px; border: none; border-radius: 50%;
+  display: grid; place-items: center; padding: 0; cursor: pointer;
+  color: var(--dim); background: var(--panel2); z-index: 3;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+.search-clear svg { position: static; width: 13px; height: 13px; }
+.search-clear:active { color: var(--ink); background: var(--line); }
+.search-clear[hidden] { display: none; }
 
 .cal-card { 
   border-radius: 16px; padding: 10px; 
@@ -848,6 +859,9 @@ html.is-standalone #tabbar {
       <div class="search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
         <input type="text" id="searchInput" placeholder="Поиск по имени или телефону...">
+        <button type="button" class="search-clear" id="searchClear" hidden aria-label="Очистить поиск">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
       </div>
 
       <div class="scr-title" id="homeListTitle" style="margin-top:4px;">Ближайшие записи</div>
@@ -1402,7 +1416,10 @@ function switchScreen(index, fromHistory) {
   }
 
   var searchEl = el('searchInput');
-  if (searchEl && searchEl.value) searchEl.value = '';
+  if (searchEl && searchEl.value) {
+    searchEl.value = '';
+    if (typeof syncSearchClear === 'function') syncSearchClear();
+  }
   
   document.querySelectorAll('.tab-btn').forEach(function(b) { 
     b.classList.toggle('active', b.dataset.screen === targetScreen); 
@@ -1632,6 +1649,21 @@ function renderHome() {
   el('recordsList').innerHTML = listHTML;
 }
 el('searchInput').addEventListener('input', renderHome);
+
+/* Крестик очистки поиска: показывается, только когда в поле есть текст */
+function syncSearchClear() {
+  const btn = el('searchClear');
+  if (btn) btn.hidden = !el('searchInput').value;
+}
+el('searchInput').addEventListener('input', syncSearchClear);
+el('searchClear').addEventListener('click', function() {
+  const input = el('searchInput');
+  input.value = '';
+  syncSearchClear();
+  renderHome();
+  input.focus();
+});
+syncSearchClear();
 
 function renderCalendar() {
   const months = MONTHS_NAMES;
