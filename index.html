@@ -763,6 +763,13 @@ html.is-standalone,
 html.is-standalone body { min-height: 100vh; }   /* vh в standalone включает safe-area — закрашиваем полосу */
 html.is-standalone #app { height: 100vh; }         /* dvh в standalone короче экрана */
 html.is-standalone .sheet { top: calc(50% + var(--ios-bottom-gap, 0px) / 2); } /* центрируем по реальному экрану */
+/* Нижняя панель в standalone: подписи опускаем ближе к низу экрана.
+   Вклад safe-area ограничен 20px — на iPhone он равен ~34px, и из-за него подписи
+   висели высоко над краем. 20px + 4px достаточно, чтобы не наехать
+   на «домашнюю полоску» (она рисуется у самого низа, ~5px). */
+html.is-standalone #tabbar {
+  padding-bottom: calc(4px + min(env(safe-area-inset-bottom, 0px), 20px));
+}
 </style>
 
 <link rel="manifest" href="manifest.webmanifest">
