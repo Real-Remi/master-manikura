@@ -135,30 +135,32 @@ body::before {
   position:relative; z-index:1; display:flex; flex-direction:column; 
   height:100dvh; max-width:520px; margin:0 auto; overflow:hidden;
   background: transparent;
-  /* Заставка: основное приложение проявляется синхронно с затуханием #splash (см. ниже) */
-  opacity: 0;
-  animation: appIn 0.6s ease 4.5s forwards;
+  transition: opacity 0.8s ease;
 }
-@keyframes appIn { to { opacity: 1; } }
+body.app-loading #app {
+  opacity: 0;
+  pointer-events: none;
+}
 
 /* --- Заставка запуска (splash) ---
    Фон повторяет body::before (те же переменные --app-bg-scrim / --app-bg-image и blur(6px)),
-   поверх — крупный логотип-текст одним шрифтом (Nunito 800).
-   Задержки считаются от предыдущего события:
-   0с только фон → +1с «МАСТЕР» (белый) → +1.5с (итого 2.5с) «МАНИКЮРА» (оранжевый
-   var(--blue)) → +2с (итого 4.5с) обе строки тухнут вместе со слоем, синхронно
-   проявляясь показывает #app (главный раздел «Записи» — он active в разметке). */
+   поверх — логотип-текст шрифтом Nunito 800.
+   Скрывается через JS добавлением класса .hidden и снятием app-loading с body. */
 #splash {
-  position: fixed; inset: 0; z-index: 200;
+  position: fixed; inset: 0; z-index: 9999;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 4px;
-  animation: splashOut 0.6s ease 4.5s forwards;
+  background: transparent;
+  transition: opacity 0.8s ease, visibility 0.8s ease;
+}
+#splash.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 #splash::before {
   content: ""; position: fixed; inset: -14px; z-index: -1; pointer-events: none;
-  /* inset:-14px — запас под размытие (как у body::before), blur — то же «замыливание» фона */
   filter: blur(6px);
-  /* Слои рисуются снизу вверх: scrim первым — поверх картинки */
   background:
     var(--app-bg-scrim),
     var(--app-bg-image) center center / cover no-repeat,
@@ -169,17 +171,22 @@ body::before {
   font: 800 clamp(40px, 13vw, 60px)/1.15 "Nunito", system-ui, sans-serif;
   letter-spacing: 3px; text-transform: uppercase; text-align: center;
   padding: 0 16px;
-  /* Тень — чтобы белое слово читалось и в светлой теме, где фон светлый */
-  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.35);
-  opacity: 0; transform: translateY(14px);
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.45);
+  opacity: 0; transform: translateY(18px);
 }
-#splashW1 { color: #ffffff; animation: wordIn 0.5s ease 1s forwards; }
-#splashW2 { color: var(--blue); animation: wordIn 0.5s ease 2.5s forwards; }
-@keyframes wordIn { to { opacity: 1; transform: none; } }
-@keyframes splashOut { to { opacity: 0; visibility: hidden; } }
-@media (prefers-reduced-motion: reduce) {
-  #splash { display: none; }
-  #app { opacity: 1; animation: none; }
+#splashW1 {
+  color: #ffffff;
+  animation: splashFadeIn 0.8s ease forwards;
+  animation-delay: 0.2s;
+}
+#splashW2 {
+  color: var(--blue);
+  animation: splashFadeIn 0.8s ease forwards;
+  animation-delay: 1.8s;
+}
+@keyframes splashFadeIn {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 #appHeader {
   display:flex; align-items:center; gap:10px; padding: 8px 14px;
@@ -904,21 +911,31 @@ html.is-standalone #tabbar {
 <meta name="apple-mobile-web-app-title" content="Мастер&#160;маникюра">
 <meta name="application-name" content="Мастер маникюра">
 </head>
-<body>
-<!-- Заставка запуска: «МАСТЕР» → «МАНИКЮРА» → плавное затухание (CSS выше, #splash).
-     Слой чистится скриптом ниже после окончания анимации, чтобы не висеть в DOM. -->
+<body class="app-loading">
+<!-- Заставка запуска: «МАСТЕР» → «МАНИКЮРА» → плавное затухание (управляется hideSplashScreen). -->
 <div id="splash" aria-hidden="true">
   <div class="splash-word" id="splashW1">МАСТЕР</div>
   <div class="splash-word" id="splashW2">МАНИКЮРА</div>
 </div>
 <script>
-/* Убираем заставку из DOM после анимации (4.5с задержки + 0.6с затухания = 5.1с).
-   #app к этому моменту уже проявился (та же тайминг-траектория в CSS). */
-(function () {
-  var sp = document.getElementById('splash');
-  if (!sp) return;
-  setTimeout(function () { if (sp.parentNode) sp.parentNode.removeChild(sp); }, 5500);
-})();
+function hideSplashScreen() {
+  var splash = document.getElementById('splash');
+  if (splash) splash.classList.add('hidden');
+  document.body.classList.remove('app-loading');
+  setTimeout(function () {
+    if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
+  }, 900);
+}
+/* Запуск скрытия заставки через 3.8с (после последовательного появления обоих слов) */
+if (document.readyState === 'complete') {
+  setTimeout(hideSplashScreen, 3800);
+} else {
+  window.addEventListener('load', function () {
+    setTimeout(hideSplashScreen, 3800);
+  });
+}
+/* Защитный таймер: если событие load по какой-то причине задерживается */
+setTimeout(hideSplashScreen, 5000);
 </script>
 <div id="app">
 
