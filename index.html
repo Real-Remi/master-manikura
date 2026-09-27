@@ -903,27 +903,34 @@ html.is-standalone #tabbar {
 
 /* --- ПК и широкие экраны: приложение остаётся вертикальным, как на телефоне ---
    На десктопе интерфейс не растягивается на всю ширину: рисуем «телефонную»
-   колонку по центру экрана (как .app-container в приложении «Твой тренер»).
-   Фон переносится внутрь колонки: полноэкранный слой body::before отключается,
-   а картинка рисуется на #app::before — так фон гарантированно совпадает
-   с границами интерфейса и не «уезжает» относительно него. */
+   колонку по центру экрана, и фон (body::before) ограничиваем этой же колонкой —
+   иначе картинка фона растягивается во всю ширину и ломает композицию.
+   Размеры колонки заданы переменными --desk-col-*; по ним же позиционируются
+   нижняя панель, оверлей и всплывающие шторки, чтобы всё совпадало с #app. */
 @media (min-width: 600px) and (min-height: 520px) {
   :root {
-    --desk-col-w: 480px;                                 /* ширина колонки, как на телефоне */
-    --desk-col-h: 900px;                                 /* «идеальная» высота телефона */
-    --desk-col-h-fit: min(900px, calc(100vh - 48px));    /* но не больше окна браузера */
+    --desk-col-w: 480px;                          /* ширина колонки, как на телефоне */
+    --desk-col-h: 900px;                          /* «идеальная» высота телефона */
+    --desk-col-h-fit: min(900px, calc(100vh - 48px)); /* но не больше окна браузера */
     --desk-col-bottom: max(24px, calc((100vh - 900px) / 2)); /* низ колонки */
   }
   html, body { overflow: hidden; }
-  /* Колонку центрируем по вертикали и горизонтали.
-     position:fixed элементы (#splash, #overlay, .sheet) из flex-потока выпадают,
-     а <script> и так не рендерятся — мешать нечему. */
-  body { display: flex; align-items: center; justify-content: center; }
+  body {
+    display: flex; align-items: center; justify-content: center;
+    background: #0f0e12;                 /* поля вокруг колонки */
+  }
+  html[data-theme="light"] body { background: #e8e5e8; }
 
-  /* Полноэкранный фон выключаем — фон теперь внутри колонки. */
-  body::before { display: none; }
+  /* Фон: та же картинка и подложка, но только по размеру колонки. */
+  body::before {
+    inset: auto;
+    left: 50%; top: 50%;
+    width: var(--desk-col-w); height: var(--desk-col-h-fit);
+    transform: translate(-50%, -50%);
+    border-radius: 36px;
+  }
 
-  /* Колонка: телефонные пропорции, скругления и тень. */
+  /* Основной экран: фиксированная высота + скруглённые углы. */
   #app,
   html.is-standalone #app {
     height: var(--desk-col-h-fit);
@@ -931,20 +938,8 @@ html.is-standalone #tabbar {
     border-radius: 36px;
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 30px 80px rgba(0, 0, 0, 0.55);
   }
-  /* Фон внутри колонки: те же переменные, что и на телефоне.
-     inset:-14px — запас под blur, лишнее срезает border-radius + overflow:hidden у #app. */
-  #app::before {
-    content: "";
-    position: absolute; inset: -14px; z-index: -1; pointer-events: none;
-    filter: blur(1.5px);
-    background:
-      var(--app-bg-scrim),
-      var(--app-bg-image) center center / cover no-repeat,
-      radial-gradient(circle at 10% 20%, rgba(255,117,151,0.08) 0%, transparent 40%),
-      radial-gradient(circle at 90% 80%, rgba(165,132,242,0.08) 0%, transparent 40%);
-  }
 
-  /* Нижняя панель прижата к низу колонки и центрирована по ней. */
+  /* Нижняя панель прижимается к низу колонки и центрируется по ней. */
   #tabbar,
   html.is-standalone #tabbar {
     left: 50%; right: auto;
@@ -956,7 +951,7 @@ html.is-standalone #tabbar {
     border-radius: 0 0 36px 36px;
   }
 
-  /* Затемнение — внутри колонки, а не на весь экран. */
+  /* Затемнение — тоже внутри колонки, а не на весь экран. */
   #overlay {
     inset: auto;
     left: 50%; top: 50%;
@@ -980,6 +975,12 @@ html.is-standalone #tabbar {
     transform: translate(-50%, -50%);
     border-radius: 36px;
     overflow: hidden;
+  }
+  /* Фон заставки — внутри колонки (position: absolute, а не fixed).
+     inset:0 без отрицательного отступа: колонка обрезает края по border-radius. */
+  #splash::before {
+    position: absolute;
+    inset: 0;
   }
   #splash .splash-word { font-size: 32px; letter-spacing: 2px; }
 }
