@@ -1,5 +1,5 @@
 /* Service worker для PWA: офлайн-кэш и установка приложения */
-const CACHE_NAME = 'beauty-master-v8';
+const CACHE_NAME = 'beauty-master-v9';
 
 const CORE_ASSETS = [
   './',
