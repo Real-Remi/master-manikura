@@ -137,21 +137,22 @@ body::before {
   background: transparent;
   /* Заставка: основное приложение проявляется синхронно с затуханием #splash (см. ниже) */
   opacity: 0;
-  animation: appIn 0.7s ease 2.1s forwards;
+  animation: appIn 0.6s ease 4.5s forwards;
 }
 @keyframes appIn { to { opacity: 1; } }
 
 /* --- Заставка запуска (splash) ---
    Фон повторяет body::before (те же переменные --app-bg-scrim / --app-bg-image и blur(6px)),
-   поверх — крупный логотип-текст одним шрифтом (Nunito 800):
-   0.1с «МАСТЕР» (белый) → 1.1с «МАНИКЮРА» (оранжевый var(--blue)) →
-   2.1с обе строки тухнут вместе со слоем, синхронно проявляясь показывает #app
-   (главный раздел «Записи» — он active в разметке по умолчанию). */
+   поверх — крупный логотип-текст одним шрифтом (Nunito 800).
+   Задержки считаются от предыдущего события:
+   0с только фон → +1с «МАСТЕР» (белый) → +1.5с (итого 2.5с) «МАНИКЮРА» (оранжевый
+   var(--blue)) → +2с (итого 4.5с) обе строки тухнут вместе со слоем, синхронно
+   проявляясь показывает #app (главный раздел «Записи» — он active в разметке). */
 #splash {
   position: fixed; inset: 0; z-index: 200;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 4px;
-  animation: splashOut 0.7s ease 2.1s forwards;
+  animation: splashOut 0.6s ease 4.5s forwards;
 }
 #splash::before {
   content: ""; position: fixed; inset: -14px; z-index: -1; pointer-events: none;
@@ -172,8 +173,8 @@ body::before {
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.35);
   opacity: 0; transform: translateY(14px);
 }
-#splashW1 { color: #ffffff; animation: wordIn 0.7s ease 0.1s forwards; }
-#splashW2 { color: var(--blue); animation: wordIn 0.7s ease 1.1s forwards; }
+#splashW1 { color: #ffffff; animation: wordIn 0.5s ease 1s forwards; }
+#splashW2 { color: var(--blue); animation: wordIn 0.5s ease 2.5s forwards; }
 @keyframes wordIn { to { opacity: 1; transform: none; } }
 @keyframes splashOut { to { opacity: 0; visibility: hidden; } }
 @media (prefers-reduced-motion: reduce) {
@@ -911,12 +912,12 @@ html.is-standalone #tabbar {
   <div class="splash-word" id="splashW2">МАНИКЮРА</div>
 </div>
 <script>
-/* Убираем заставку из DOM после анимации (2.1с задержки + 0.7с затухания).
+/* Убираем заставку из DOM после анимации (4.5с задержки + 0.6с затухания = 5.1с).
    #app к этому моменту уже проявился (та же тайминг-траектория в CSS). */
 (function () {
   var sp = document.getElementById('splash');
   if (!sp) return;
-  setTimeout(function () { if (sp.parentNode) sp.parentNode.removeChild(sp); }, 3000);
+  setTimeout(function () { if (sp.parentNode) sp.parentNode.removeChild(sp); }, 5500);
 })();
 </script>
 <div id="app">
