@@ -1,7 +1,14 @@
 <!DOCTYPE html>
 <html lang="ru" data-theme="dark">
 <head>
-<script>try{document.documentElement.dataset.theme=localStorage.getItem("nail_theme")||"dark"}catch(e){}</script>
+<script>try{
+  var _d = document.documentElement;
+  _d.dataset.theme = localStorage.getItem("nail_theme") || "dark";
+  var _bg = localStorage.getItem("nail_app_bg");
+  if (_bg) _d.style.setProperty("--app-bg-image", 'url("' + _bg + '")');
+  // Стекло панелей по умолчанию включено — класс ставим сразу, чтобы панели не «мигали» плоскими
+  if (localStorage.getItem("nail_tabbar_glass") !== "0") _d.classList.add("glass-panels");
+}catch(e){}</script>
 <meta charset="UTF-8">
 <script>
 /* iOS standalone (приложение с домашнего экрана): viewport «лжёт» — layout viewport
@@ -36,8 +43,11 @@
 <style>
 :root {
   --bg: #18161a; 
-  --panel: rgba(28, 28, 30, 0.55); 
-  --panel2: rgba(48, 48, 50, 0.5); 
+  /* Карточки и элементы внутри них — непрозрачные: фон приложения не должен
+     просвечивать сквозь интерфейс (иначе всё выглядит как «стекло»).
+     Полупрозрачные поверхности есть только у панелей — при включённом стекле. */
+  --panel: #1f1e22; 
+  --panel2: #2b2a30; 
   --panel-solid: #1f1e22;
   --line: rgba(255, 255, 255, 0.08);
   --ink: #ffffff; 
@@ -55,6 +65,12 @@
   --glass-border: 1px solid rgba(255, 255, 255, 0.08);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   --glass-blur: none;
+  /* Панель со включённым «эффектом стекла» (см. html.glass-panels) */
+  --glass-panel-bg: rgba(30, 29, 33, 0.66);
+  /* Фон приложения: заводская картинка из папки main; подложка (scrim) приглушает
+     картинку, чтобы белый текст читался поверх неё. */
+  --app-bg-image: url("main/fon_1.jpg");
+  --app-bg-scrim: linear-gradient(rgba(24, 22, 26, 0.5), rgba(24, 22, 26, 0.68));
   --stat-lbl: #ffffff;
   --nav-active: #FFA726;
   --nav-active-glow: rgba(255, 167, 38, 0.45);
@@ -63,8 +79,8 @@
 }
 [data-theme="light"] {
   --bg: #fdfafb; 
-  --panel: rgba(255, 255, 255, 0.55); 
-  --panel2: rgba(255, 255, 255, 0.75); 
+  --panel: #ffffff; 
+  --panel2: #f4f1f2; 
   --panel-solid: #ffffff;
   --line: rgba(0, 0, 0, 0.05);
   --ink: #000000; 
@@ -82,6 +98,9 @@
   --glass-border: 1px solid rgba(255, 255, 255, 0.8);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
   --glass-blur: none;
+  --glass-panel-bg: rgba(255, 255, 255, 0.66);
+  --app-bg-image: url("main/fon_1.jpg");
+  --app-bg-scrim: linear-gradient(rgba(253, 250, 251, 0.55), rgba(253, 250, 251, 0.72));
   --stat-lbl: #000000;
   --nav-active: #F57C00;
   --nav-active-glow: rgba(245, 124, 0, 0.25);
@@ -100,8 +119,15 @@ body {
 }
 body::before {
   content:"";
-  position:fixed; inset:0; z-index:0; pointer-events:none;
-  background: 
+  position:fixed; inset:-14px; z-index:0; pointer-events:none;
+  /* inset:-14px — запас под размытие: без него по краям экрана проступает
+     «серая» кайма от blur. Слой fixed, поэтому страница от этого не растягивается. */
+  filter: blur(3px);
+  /* Слои фона рисуются снизу вверх: последний в списке — самый нижний.
+     Подложка (scrim) идёт ПЕРВОЙ, т.е. поверх картинки — иначе она не видна. */
+  background:
+    var(--app-bg-scrim),
+    var(--app-bg-image) center center / cover no-repeat,
     radial-gradient(circle at 10% 20%, rgba(255,117,151,0.08) 0%, transparent 40%),
     radial-gradient(circle at 90% 80%, rgba(165,132,242,0.08) 0%, transparent 40%);
 }
@@ -533,6 +559,9 @@ h1 .accent { color: var(--blue); }
 .opt-row .opt-txt { min-width: 0; }
 .opt-row .opt-title { font: 600 14px system-ui, -apple-system, Roboto, sans-serif; color: var(--ink); }
 .opt-row .opt-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+/* Кнопки справа от названия настройки (карточка «Фон приложения») */
+.opt-actions { display: flex; align-items: center; gap: 8px; flex: none; }
+.btn-mini { width: auto; padding: 8px 14px; font-size: 13px; border-radius: 10px; box-shadow: none; }
 .switch {
   position: relative; flex: none; width: 48px; height: 29px;
   border-radius: 999px; border: 1px solid var(--glass-border);
@@ -546,17 +575,22 @@ h1 .accent { color: var(--blue); }
   transition: transform 0.2s, background 0.2s;
 }
 .switch.on { background: var(--blue); border-color: var(--blue); }
-.switch.on::after { transform: translateX(19px); background: var(--on-accent); }
+/* Во включённом состоянии кружок белый (на оранжевом фоне) — см. настройку «Эффект стекла панелей» */
+.switch.on::after { transform: translateX(19px); background: #ffffff; }
 .switch:active::after { width: 26px; }
 .switch.on:active::after { transform: translateX(16px); }
 
-/* Стекло только для нижней панели (переключатель в разделе «Данные») */
-html.tabbar-glass #tabbar {
-  background: var(--panel);
+/* Стекло верхней и нижней панели (переключатель в разделе «Настройки»).
+   Только эти две панели получают полупрозрачный фон и размытие — карточки,
+   шторки и всё остальное остаются непрозрачными. */
+html.glass-panels #appHeader,
+html.glass-panels #tabbar {
+  background: var(--glass-panel-bg);
   -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
 }
-html.tabbar-glass #tabbar .tab-btn { position: relative; z-index: 1; }
+html.glass-panels #appHeader > *,
+html.glass-panels #tabbar .tab-btn { position: relative; z-index: 1; }
 
 #btnCalendarAdd { font-size: 16px; font-weight: 800; padding: 14px; }
 
@@ -946,18 +980,22 @@ html.is-standalone #tabbar {
     </section>
 
     <section class="screen" id="screen-data">
-      <div class="scr-title">Настройки и Данные</div>
+      <div class="scr-title">Оформление</div>
       <div class="cal-card">
-        <div class="field">
-          <label style="color: var(--stat-lbl);">Оформление</label>
-          <div class="opt-row">
-            <div class="opt-txt">
-              <div class="opt-title">Стекло в нижней панели</div>
-              <div class="opt-desc">Полупрозрачная панель со значками с размытием фона</div>
-            </div>
-            <button type="button" class="switch" id="glassSwitch" role="switch" aria-checked="false" aria-label="Стекло в нижней панели" onclick="toggleTabbarGlass()"></button>
+        <div class="opt-row">
+          <div class="opt-title">Эффект стекла панелей</div>
+          <button type="button" class="switch" id="glassSwitch" role="switch" aria-checked="true" aria-label="Эффект стекла верхней и нижней панели" onclick="toggleGlassPanels()"></button>
+        </div>
+      </div>
+      <div class="cal-card" style="margin-top:10px;">
+        <div class="opt-row">
+          <div class="opt-title">Фон приложения</div>
+          <div class="opt-actions">
+            <button type="button" class="btn btn-mini" id="bgPickBtn">Выбрать</button>
+            <button type="button" class="btn btn-outline btn-mini" id="bgClearBtn">Очистить</button>
           </div>
         </div>
+        <input type="file" id="bgFile" accept="image/*" hidden>
       </div>
       <div class="cal-card" style="margin-top:10px;">
         <div class="field">
@@ -1001,7 +1039,7 @@ html.is-standalone #tabbar {
     </button>
     <button class="tab-btn" data-screen="data">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      <span>Данные</span>
+      <span>Настройки</span>
     </button>
   </nav>
 
@@ -2844,29 +2882,120 @@ el('btnDeleteService').onclick = function() {
   }
 };
 
-/* --- Переключатель «стекло в нижней панели» --- */
+/* --- Переключатель «эффект стекла панелей» ---
+   Полупрозрачный фон и размытие включаются ТОЛЬКО у верхней шапки и нижней панели
+   (карточки, шторки и остальной интерфейс остаются непрозрачными).
+   Ключ localStorage оставлен прежним, чтобы у существующих пользователей выбранное
+   значение не сбросилось; если ключа нет (новый пользователь) — стекло включено. */
 const GLASS_KEY = 'nail_tabbar_glass';
-function applyTabbarGlass() {
-  let on = false;
-  try { on = localStorage.getItem(GLASS_KEY) === '1'; } catch (e) {}
-  document.documentElement.classList.toggle('tabbar-glass', on);
+function setGlassPanels(on) {
+  document.documentElement.classList.toggle('glass-panels', on);
   const sw = el('glassSwitch');
   if (sw) {
     sw.classList.toggle('on', on);
     sw.setAttribute('aria-checked', on ? 'true' : 'false');
   }
 }
-window.toggleTabbarGlass = function() {
-  const on = !document.documentElement.classList.contains('tabbar-glass');
-  document.documentElement.classList.toggle('tabbar-glass', on);
-  const sw = el('glassSwitch');
-  if (sw) {
-    sw.classList.toggle('on', on);
-    sw.setAttribute('aria-checked', on ? 'true' : 'false');
-  }
+function applyGlassPanels() {
+  let saved = null;
+  try { saved = localStorage.getItem(GLASS_KEY); } catch (e) {}
+  setGlassPanels(saved === null ? true : saved === '1');
+}
+window.toggleGlassPanels = function() {
+  const on = !document.documentElement.classList.contains('glass-panels');
+  setGlassPanels(on);
   try { localStorage.setItem(GLASS_KEY, on ? '1' : '0'); } catch (e) {}
 };
-applyTabbarGlass();
+applyGlassPanels();
+
+/* --- Фон приложения (карточка «Фон приложения») ---
+   Заводской фон — картинка main/fon_1.jpg. Выбранная пользователем картинка
+   сжимается в canvas (фон показывается с размытием, поэтому большой размер не нужен)
+   и кладётся в localStorage строкой data:URL. Кнопка «Очистить» удаляет ключ —
+   возвращается заводской фон. */
+const APP_BG_KEY = 'nail_app_bg';
+const APP_BG_DEFAULT = 'main/fon_1.jpg';
+const APP_BG_MAX_LEN = 2600000; /* символов: 5 МБ квоты localStorage делим с записями и прайсом */
+
+function applyAppBg() {
+  let url = APP_BG_DEFAULT;
+  try {
+    const saved = localStorage.getItem(APP_BG_KEY);
+    if (saved) url = saved;
+  } catch (e) {}
+  document.documentElement.style.setProperty('--app-bg-image', 'url("' + url + '")');
+  const clearBtn = el('bgClearBtn');
+  if (clearBtn) clearBtn.disabled = (url === APP_BG_DEFAULT);
+}
+
+/* Уменьшает картинку до maxSide по большей стороне и отдаёт data:URL JPEG */
+function shrinkBgImage(img, maxSide, quality) {
+  const w = img.naturalWidth || img.width;
+  const h = img.naturalHeight || img.height;
+  if (!w || !h) return '';
+  const scale = Math.min(1, maxSide / Math.max(w, h));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(w * scale));
+  canvas.height = Math.max(1, Math.round(h * scale));
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  try { return canvas.toDataURL('image/jpeg', quality); } catch (e) { return ''; }
+}
+
+function storeAppBgFile(file) {
+  if (!file || file.type.indexOf('image/') !== 0) {
+    alert('Выберите файл изображения.');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function() {
+    const img = new Image();
+    img.onload = function() {
+      /* Сначала хорошее качество; если в localStorage не влезает — жмём сильнее. */
+      const steps = [
+        { side: 1280, quality: 0.78 },
+        { side: 1024, quality: 0.62 },
+        { side: 800,  quality: 0.5 }
+      ];
+      let dataUrl = '';
+      for (let i = 0; i < steps.length; i++) {
+        dataUrl = shrinkBgImage(img, steps[i].side, steps[i].quality);
+        if (!dataUrl) break;
+        if (dataUrl.length <= APP_BG_MAX_LEN || i === steps.length - 1) break;
+      }
+      if (!dataUrl) {
+        alert('Не удалось обработать картинку. Попробуйте другую.');
+        return;
+      }
+      try {
+        localStorage.setItem(APP_BG_KEY, dataUrl);
+      } catch (e) {
+        alert('Картинка слишком большая — выберите другую.');
+        return;
+      }
+      applyAppBg();
+    };
+    img.onerror = function() { alert('Не удалось открыть картинку. Попробуйте другую.'); };
+    img.src = reader.result;
+  };
+  reader.onerror = function() { alert('Не удалось прочитать файл.'); };
+  reader.readAsDataURL(file);
+}
+
+el('bgPickBtn').onclick = function() { el('bgFile').click(); };
+
+el('bgFile').onchange = function(e) {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (file) storeAppBgFile(file);
+};
+
+el('bgClearBtn').onclick = function() {
+  try { localStorage.removeItem(APP_BG_KEY); } catch (e) {}
+  applyAppBg();
+};
+
+applyAppBg();
 
 /* --- Последнее резервное копирование --- */
 const BACKUP_KEY = 'nail_last_backup';
