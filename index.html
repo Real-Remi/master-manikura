@@ -199,6 +199,8 @@ body.app-loading #app {
   display:flex; align-items:center; gap:10px; padding: 8px 14px;
   background: var(--panel-solid); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border-bottom: var(--glass-border);
   padding-top: calc(8px + env(safe-area-inset-top)); flex:none; z-index: 10;
+  height: calc(52px + env(safe-area-inset-top));
+  box-sizing: border-box;
 }
 .logo {
   width: 36px; height: 36px; border-radius: 12px; flex:none;
@@ -235,14 +237,11 @@ html.glass-cards .screen {
   transform: none;
 }
 
-/* ====== Экран списка записей ====== */
 #app.show-monthlist #appHeader { display: none; }
 
 #screen-monthlist {
   padding: 0 14px 90px;
 }
-/* Панель списка — grid: 36 / 1fr / 36 → заголовок строго по центру,
-   кнопка закрытия прижата вправо и выровнена по вертикали (align-items: center). */
 .monthlist-head {
   position: sticky;
   top: 0;
@@ -253,6 +252,8 @@ html.glass-cards .screen {
   gap: 8px;
   padding: 8px 14px;
   padding-top: calc(8px + env(safe-area-inset-top));
+  height: calc(52px + env(safe-area-inset-top));
+  box-sizing: border-box;
   margin: 0 -14px 12px;
   background: var(--panel-solid);
   border-bottom: var(--glass-border);
@@ -295,8 +296,6 @@ html.glass-panels .monthlist-head {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-/* Кнопка закрытия — 32×32, выровнена по вертикали grid'ом */
 .monthlist-close {
   grid-column: 3;
   justify-self: end;
@@ -336,7 +335,6 @@ html.glass-panels .monthlist-close {
 }
 .home-section-title:first-child { margin-top: 0; }
 
-/* ====== КАРТОЧКА ПРИВЕТСТВИЯ ====== */
 .welcome-card {
   position: relative;
   border-radius: 16px;
@@ -417,7 +415,6 @@ html.glass-panels .monthlist-close {
   text-align: center;
 }
 
-/* ====== ШТОРКА РЕДАКТИРОВАНИЯ ПРИВЕТСТВИЯ ====== */
 .welcome-crop {
   position: relative;
   width: 100%;
@@ -766,17 +763,54 @@ html.glass-panels .monthlist-close {
 
 .price-card {
   position: relative;
-  border-radius: 14px; padding: 12px; display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px; cursor: pointer; transition: 0.2s;
+  border-radius: 14px; padding: 12px; display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px; cursor: pointer;
   background: var(--panel); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: var(--glass-border); box-shadow: var(--glass-shadow);
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s, box-shadow 0.2s, opacity 0.2s;
+  will-change: transform;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 .price-card:active { transform: scale(0.98); border-color: var(--blue); }
 .price-card::after {
   content: '›'; position: absolute; top: 6px; right: 10px;
   color: var(--dim); font-size: 18px; line-height: 1; font-weight: 300; pointer-events: none;
 }
+/* Активная карточка при drag — «поднята над списком» */
+.price-card.dragging {
+  transition: none;
+  z-index: 100;
+  transform-origin: center;
+  box-shadow: 0 14px 36px rgba(0,0,0,0.55), 0 0 0 2px var(--blue);
+  border-color: var(--blue);
+  cursor: grabbing;
+}
+.price-card.dragging::after { opacity: 0; }
+
 .pc-left strong { display:flex; align-items:center; gap:6px; font-size:14px; margin-bottom:2px;}
 .pc-left span { font-size:11px; color:var(--muted); }
 .pc-right { font: 800 15px "Nunito"; color: var(--green); margin-right: 18px; }
+
+.pc-edit {
+  position: absolute;
+  top: 50%;
+  right: 26px;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: var(--dim);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+  z-index: 2;
+  transition: background 0.15s, color 0.15s;
+}
+.pc-edit:active { background: var(--panel2); color: var(--blue); }
+.pc-edit svg { width: 15px; height: 15px; }
 
 .btn {
   width:100%; display:flex; align-items:center; justify-content:center; gap:8px;
@@ -834,6 +868,10 @@ html.glass-cards .price-card,
 html.glass-cards .dayoff-card,
 html.glass-cards .r-card,
 html.glass-cards .welcome-card,
+html.glass-cards .sheet,
+html.glass-cards #statusSheet,
+html.glass-cards #serviceSheet,
+html.glass-cards #categorySheet,
 html.glass-cards .search input,
 html.glass-cards #themeBtn,
 html.glass-cards #priceBtnBack,
@@ -892,8 +930,8 @@ html.glass-cards #priceBtnAdd {
 .status-btn:active { border-color: var(--blue); }
 .status-btn .chev { width: 16px; height: 16px; color: var(--dim); flex-shrink: 0; }
 
-#statusSheet { z-index: 55; background: var(--bg); }
-#serviceSheet { z-index: 55; background: var(--bg); }
+#statusSheet { z-index: 55; }
+#serviceSheet { z-index: 55; }
 #fServiceLabel.is-empty { color: var(--dim); font-weight: 400; }
 
 .suggest-box {
@@ -1071,15 +1109,22 @@ html.glass-cards #welcomeSheet {
   line-height: 1;
 }
 
-/* Подпись разработчика в конце раздела «Настройки» */
 .app-dev-sign {
   text-align: center;
-  padding: 26px 0 6px;
+  padding: 20px 0 6px;
   color: var(--dim);
   font-size: 11px;
   line-height: 1.6;
   letter-spacing: 0.2px;
   font-weight: 600;
+}
+
+.settings-section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  text-align: center;
+  margin: 20px 0 12px;
 }
 </style>
 <style>
@@ -1260,7 +1305,7 @@ setTimeout(hideSplashScreen, 5000);
           <button type="button" class="switch" id="glassCardsSwitch" role="switch" aria-checked="true" aria-label="Эффект стекла карточек" onclick="toggleGlassCards()"></button>
         </div>
       </div>
-      <div class="cal-card" style="margin-top:10px;">
+      <div class="cal-card" style="margin-top:10px;" id="vibrationCard">
         <div class="opt-row">
           <div class="opt-title">Вибрация кнопок</div>
           <button type="button" class="switch" id="vibrationSwitch" role="switch" aria-checked="true" aria-label="Вибрация при нажатии кнопок нижней панели" onclick="toggleVibration()"></button>
@@ -1276,23 +1321,21 @@ setTimeout(hideSplashScreen, 5000);
         </div>
         <input type="file" id="bgFile" accept="image/*" hidden>
       </div>
-      <div class="cal-card" style="margin-top:10px;">
-        <div class="field">
-          <label style="color: var(--stat-lbl);">Резервное копирование</label>
-          <span style="font-size:12px; color:var(--dim); margin-bottom:8px;">Скачайте или загрузите базу клиентов.</span>
-          <div id="backupInfo" style="font-size:12px; color:var(--muted); background:var(--panel2); border:var(--glass-border); border-radius:10px; padding:9px 12px; margin-bottom:8px; display:flex; align-items:center; gap:7px;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px; flex:none;"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-            <span id="backupInfoText">Последнее сохранение: ещё не было</span>
-          </div>
-          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:6px;">
-            <button class="btn" onclick="exportData()">Скачать</button>
-            <button class="btn" id="btnImport">Загрузить</button>
+
+      <div class="settings-section-title">Данные</div>
+
+      <div class="cal-card" style="padding:12px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+          <div style="font-size:14px; font-weight:600; color:var(--ink);">База данных</div>
+          <div style="display:flex; gap:8px;">
+            <button type="button" class="btn btn-mini" onclick="exportData()">Сохранить</button>
+            <button type="button" class="btn btn-mini" id="btnImport">Загрузить</button>
             <input type="file" id="importFile" accept=".json" hidden>
           </div>
         </div>
-        <div class="field" style="margin-top:16px; border-top:1px dashed var(--line); padding-top:16px;">
-          <button class="btn btn-danger" onclick="clearData()">Очистить все данные</button>
-        </div>
+        <div style="border-top:1px dashed var(--line); margin:10px 0 8px;"></div>
+        <div id="backupInfoText" style="font-size:12px; color:var(--muted); text-align:center; margin-bottom:10px;">Последнее сохранение: ещё не было</div>
+        <button class="btn btn-danger" onclick="clearData()">Очистить все данные</button>
       </div>
 
       <div class="app-dev-sign">
@@ -1301,7 +1344,6 @@ setTimeout(hideSplashScreen, 5000);
       </div>
     </section>
 
-    <!-- ===== Экран списка записей (открывается из «Записей в месяце» / «Ожидают») ===== -->
     <section class="screen" id="screen-monthlist">
       <div class="monthlist-head">
         <div class="monthlist-title-wrap">
@@ -1378,9 +1420,8 @@ setTimeout(hideSplashScreen, 5000);
     <div class="q-client-name" id="qName">Имя</div>
     <div class="q-service-pill" id="qService">Услуга</div>
     
-    <div id="qPhoneActions" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:16px; display:none;">
+    <div id="qPhoneActions" style="display:grid; grid-template-columns: 1fr; gap:10px; margin-bottom:16px; display:none;">
       <a id="qBtnCall" href="#" class="btn btn-outline" style="background:var(--green); border-color:transparent; color:#052e16;">Позвонить</a>
-      <a id="qBtnMax" href="max://" target="_blank" class="btn">MAX</a>
     </div>
 
     <div id="qActionArea" style="display:none;">
@@ -1466,6 +1507,18 @@ setTimeout(hideSplashScreen, 5000);
     </form>
   </div>
 
+  <div class="sheet" id="categorySheet">
+    <div class="sheet-head">
+      <h2 id="categorySheetTitle">Новый раздел</h2>
+      <button class="icon-btn" type="button" onclick="closeAllSheets()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <form id="categoryForm">
+      <div class="field"><label>Название раздела</label><input type="text" id="catName" placeholder="Например: Наращивание" maxlength="40" required></div>
+      <button type="submit" class="btn" style="margin-top:8px;">Сохранить</button>
+      <button type="button" class="btn btn-outline" id="btnDeleteCategory" style="margin-top:8px; display:none; color:var(--red); border-color:var(--red-soft);">Удалить раздел</button>
+    </form>
+  </div>
+
   <div class="sheet" id="statusSheet">
     <div class="sheet-head" style="margin-bottom: 8px;">
       <h2>Статус записи</h2>
@@ -1518,12 +1571,23 @@ setTimeout(hideSplashScreen, 5000);
 <script>
 let records = [];
 let services = [];
+let priceCategories = [];
+let editingCategoryId = null;
 
-const priceCategories = [
+const DEFAULT_PRICE_CATEGORIES = [
   { id: 'manicure', name: 'Маникюр' },
   { id: 'pedicure', name: 'Педикюр' },
   { id: 'other', name: 'Другое' }
 ];
+try {
+  const savedCats = JSON.parse(localStorage.getItem('nail_price_categories'));
+  if (Array.isArray(savedCats) && savedCats.length > 0) {
+    priceCategories = savedCats;
+  } else {
+    priceCategories = DEFAULT_PRICE_CATEGORIES.slice();
+  }
+} catch(e) { priceCategories = DEFAULT_PRICE_CATEGORIES.slice(); }
+
 let currentPriceCategory = null;
 
 const STATUS_LABELS = { plan: 'Ожидает', done: 'Выполнено', cancel: 'Отменено' };
@@ -1536,14 +1600,22 @@ let compareMonthY = new Date().getFullYear();
 let compareMonthM = new Date().getMonth();
 const MAX_MONTHS_BACK = 24;
 
-/* ====== Вибрация ====== */
+/* ====== Вибрация (только Android) ====== */
 const VIBRATION_KEY = 'nail_vibration';
 let vibrationEnabled = true;
 try { vibrationEnabled = localStorage.getItem(VIBRATION_KEY) !== '0'; } catch(e) {}
 
+function isIOSDevice() {
+  try {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+           (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  } catch(e) { return false; }
+}
+
+/* Усиленная вибрация: базовые 35мс, длинные нажатия 50мс */
 function haptic(ms) {
   if (!vibrationEnabled) return;
-  try { if (navigator.vibrate) navigator.vibrate(ms || 10); } catch(e) {}
+  try { if (navigator.vibrate) navigator.vibrate(ms || 35); } catch(e) {}
 }
 
 function applyVibrationSwitch() {
@@ -1557,10 +1629,16 @@ window.toggleVibration = function() {
   vibrationEnabled = !vibrationEnabled;
   try { localStorage.setItem(VIBRATION_KEY, vibrationEnabled ? '1' : '0'); } catch(e) {}
   applyVibrationSwitch();
-  if (vibrationEnabled) haptic(15); // дать отклик при включении
+  if (vibrationEnabled) haptic(50);
 };
 
-/* ====== WELCOME (карточка приветствия) ====== */
+function hideVibrationCardOnIOS() {
+  if (!isIOSDevice()) return;
+  const card = document.getElementById('vibrationCard');
+  if (card) card.style.display = 'none';
+}
+
+/* ====== WELCOME ====== */
 let welcomeData = { photo: null, name: '' };
 try {
   const saved = JSON.parse(localStorage.getItem('nail_welcome'));
@@ -1691,6 +1769,7 @@ window.closeWelcomeSheet = function() {
       !el('confirmSheet').classList.contains('open') &&
       !el('statusSheet').classList.contains('open') &&
       !el('priceSheet').classList.contains('open') &&
+      !el('categorySheet').classList.contains('open') &&
       !el('chartSheet').classList.contains('open') &&
       !el('serviceSheet').classList.contains('open')) {
     overlay.classList.remove('show');
@@ -2112,10 +2191,9 @@ function switchScreen(index, fromHistory) {
   renderAll();
 }
 
-/* Кнопки нижней панели: с лёгкой вибрацией при нажатии */
 document.querySelectorAll('.tab-btn').forEach(function(btn, idx) {
   btn.addEventListener('click', function() {
-    haptic(10);
+    haptic(35);
     switchScreen(idx);
   });
 });
@@ -2223,7 +2301,7 @@ const formatHomeSectionTitle = function(dateStr, todayStr, tomorrowStr) {
   return formatDateNominative(dateStr);
 };
 
-const uid = function() { return Date.now().toString(36); };
+const uid = function() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); };
 
 const toLocalISO = function(d) {
   return new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
@@ -2484,7 +2562,6 @@ function renderDayRecords() {
   el('dayRecordsList').innerHTML = dRecs.length ? dRecs.map(renderCard).join('') : '<div style="color:var(--dim); font-size:13px; text-align:center; padding:10px;">На этот день записей нет</div>';
 }
 
-/* ===== Экран списка записей (полноэкранный) ===== */
 window.openMonthListPage = function(title1, title2, arr, emptyText) {
   el('monthListPageTitle').textContent = title1;
   el('monthListPageSubtitle').textContent = title2;
@@ -2541,7 +2618,6 @@ window.openMonthRecordsList = function() {
 
   openMonthListPage('Все записи', monthName, allMonth, 'В этом месяце записей нет');
 };
-/* =========================================== */
 
 function hasDoneInMonth(y, m) {
   const prefix = y + '-' + String(m + 1).padStart(2, '0');
@@ -2777,6 +2853,7 @@ window.closeChartSheet = function() {
       !el('confirmSheet').classList.contains('open') &&
       !el('statusSheet').classList.contains('open') &&
       !el('priceSheet').classList.contains('open') &&
+      !el('categorySheet').classList.contains('open') &&
       !el('welcomeSheet').classList.contains('open')) {
     overlay.classList.remove('show');
     popSheetHistory();
@@ -3179,6 +3256,7 @@ window.openMonthDetails = function(monthKey, title) {
   pushSheetHistory();
 };
 
+/* ===== Прайс ===== */
 function renderPrice() {
   const headTitle = el('priceScreenTitle');
   const headBtnAdd = el('priceBtnAdd');
@@ -3186,19 +3264,32 @@ function renderPrice() {
 
   if (!currentPriceCategory) {
     headTitle.textContent = 'Мой Прайс';
-    headBtnAdd.style.display = 'none';
+    headBtnAdd.style.display = 'grid';
     headBtnBack.style.display = 'none';
 
     let html = '';
-    priceCategories.forEach(function(cat) {
-      const count = services.filter(function(s) { return s.catId === cat.id; }).length;
-      html += '<div class="price-card" onclick="openCategory(\'' + cat.id + '\')">' +
-                '<div class="pc-left"><strong style="font-size:16px;">' + cat.name + '</strong><span>Услуг: ' + count + '</span></div>' +
-              '</div>';
-    });
+    if (!priceCategories.length) {
+      html = '<div style="color:var(--dim); text-align:center; padding:20px;">Разделов пока нет. Нажмите «+», чтобы создать.</div>';
+    } else {
+      priceCategories.forEach(function(cat) {
+        const count = services.filter(function(s) { return s.catId === cat.id; }).length;
+        const catIdEsc = escapeHtml(String(cat.id));
+        html += '<div class="price-card" data-cat-id="' + catIdEsc + '" onclick="openCategory(\'' + catIdEsc + '\')">' +
+                  '<div class="pc-left"><strong style="font-size:16px;">' + escapeHtml(cat.name) + '</strong><span>Услуг: ' + count + '</span></div>' +
+                  '<button type="button" class="pc-edit" aria-label="Редактировать раздел" onclick="event.stopPropagation(); editCategory(\'' + catIdEsc + '\')">' +
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>' +
+                  '</button>' +
+                '</div>';
+      });
+    }
     el('priceList').innerHTML = html;
   } else {
     const cat = priceCategories.find(function(c) { return c.id === currentPriceCategory; });
+    if (!cat) {
+      currentPriceCategory = null;
+      renderPrice();
+      return;
+    }
     headTitle.textContent = cat.name;
     headBtnAdd.style.display = 'grid'; 
     headBtnBack.style.display = 'grid';
@@ -3219,7 +3310,234 @@ function renderPrice() {
   }
 }
 
-window.openCategory = function(id) { currentPriceCategory = id; renderPrice(); pushNav('category'); };
+/* ===== Drag-and-drop разделов прайса (только в корне) ===== */
+const DRAG_LONG_PRESS_MS = 600;
+let dragCtx = null;
+let suppressCatClick = false;
+
+function getPriceCategoryCards() {
+  if (currentPriceCategory !== null) return [];
+  const list = el('priceList');
+  if (!list) return [];
+  return Array.prototype.slice.call(list.querySelectorAll('.price-card'));
+}
+
+function onCatDragStart(e) {
+  if (currentPriceCategory !== null) return;
+  if (e.touches.length !== 1) return;
+  const target = e.target.closest('.price-card');
+  if (!target) return;
+  if (e.target.closest('.pc-edit')) return;
+
+  const cards = getPriceCategoryCards();
+  const idx = cards.indexOf(target);
+  if (idx < 0) return;
+
+  const t = e.touches[0];
+  dragCtx = {
+    started: false,
+    active: false,
+    startX: t.clientX,
+    startY: t.clientY,
+    startIndex: idx,
+    hoverIndex: idx,
+    cardEl: target,
+    cards: cards,
+    step: target.offsetHeight + 8,
+    timer: null,
+    offsetY: 0
+  };
+
+  dragCtx.timer = setTimeout(function() {
+    if (!dragCtx || dragCtx.active) return;
+    if (dragCtx.startIndex !== dragCtx.hoverIndex) return;
+    dragCtx.active = true;
+    dragCtx.cardEl.classList.add('dragging');
+    haptic(50);
+  }, DRAG_LONG_PRESS_MS);
+}
+
+function onCatDragMove(e) {
+  if (!dragCtx) return;
+  const t = e.touches[0];
+  const dx = t.clientX - dragCtx.startX;
+  const dy = t.clientY - dragCtx.startY;
+
+  if (!dragCtx.active) {
+    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+      clearTimeout(dragCtx.timer);
+      dragCtx = null;
+    }
+    return;
+  }
+
+  e.preventDefault();
+
+  dragCtx.offsetY = dy;
+  dragCtx.cardEl.style.transform = 'translateY(' + dy + 'px) scale(1.03)';
+
+  let shift = Math.round(dy / dragCtx.step);
+  let newHover = dragCtx.startIndex + shift;
+  if (newHover < 0) newHover = 0;
+  if (newHover > dragCtx.cards.length - 1) newHover = dragCtx.cards.length - 1;
+
+  if (newHover !== dragCtx.hoverIndex) {
+    dragCtx.hoverIndex = newHover;
+    applyCatDragShifts();
+    haptic(20);
+  }
+}
+
+function applyCatDragShifts() {
+  const { startIndex, hoverIndex, step, cards, cardEl } = dragCtx;
+  cards.forEach(function(c, i) {
+    if (c === cardEl) return;
+    if (i > startIndex && i <= hoverIndex) {
+      c.style.transform = 'translateY(' + (-step) + 'px)';
+    } else if (i < startIndex && i >= hoverIndex) {
+      c.style.transform = 'translateY(' + step + 'px)';
+    } else {
+      c.style.transform = '';
+    }
+  });
+}
+
+function onCatDragEnd(e) {
+  if (!dragCtx) return;
+  clearTimeout(dragCtx.timer);
+
+  if (!dragCtx.active) {
+    dragCtx = null;
+    return;
+  }
+
+  const ctx = dragCtx;
+  const startIndex = ctx.startIndex;
+  const hoverIndex = ctx.hoverIndex;
+  dragCtx = null;
+
+  /* подавляем следующий click */
+  suppressCatClick = true;
+  setTimeout(function() { suppressCatClick = false; }, 400);
+
+  /* Анимация «щёлк» — перетаскиваемая карточка плавно встаёт на место */
+  const snapY = (hoverIndex - startIndex) * ctx.step;
+  ctx.cards.forEach(function(c) {
+    c.style.transition = 'transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s, box-shadow 0.2s';
+  });
+  ctx.cardEl.style.transform = 'translateY(' + snapY + 'px)';
+  ctx.cards.forEach(function(c) {
+    if (c === ctx.cardEl) return;
+    c.style.transform = '';
+  });
+
+  setTimeout(function() {
+    ctx.cards.forEach(function(c) {
+      c.classList.remove('dragging');
+      c.style.transition = '';
+      c.style.transform = '';
+    });
+    if (startIndex !== hoverIndex) {
+      const moved = priceCategories.splice(startIndex, 1)[0];
+      priceCategories.splice(hoverIndex, 0, moved);
+      try { localStorage.setItem('nail_price_categories', JSON.stringify(priceCategories)); } catch(e) {}
+    }
+    renderPrice();
+  }, 210);
+}
+
+/* Навешиваем один раз на #priceList — делегирование */
+(function() {
+  const list = el('priceList');
+  if (!list) return;
+  list.addEventListener('touchstart', onCatDragStart, { passive: true });
+  list.addEventListener('touchmove', onCatDragMove, { passive: false });
+  list.addEventListener('touchend', onCatDragEnd);
+  list.addEventListener('touchcancel', function() {
+    if (!dragCtx) return;
+    clearTimeout(dragCtx.timer);
+    if (dragCtx.active) {
+      dragCtx.cards.forEach(function(c) {
+        c.classList.remove('dragging');
+        c.style.transform = '';
+        c.style.transition = '';
+      });
+    }
+    dragCtx = null;
+  });
+})();
+
+/* ===== Разделы прайса (создать/редактировать/удалить) ===== */
+window.openCategorySheet = function() {
+  el('categoryForm').reset();
+  el('categorySheetTitle').textContent = 'Новый раздел';
+  el('btnDeleteCategory').style.display = 'none';
+  editingCategoryId = null;
+  overlay.classList.add('show');
+  el('categorySheet').classList.add('open');
+  pushSheetHistory();
+};
+
+window.editCategory = function(id) {
+  const cat = priceCategories.find(function(c) { return c.id === id; });
+  if (!cat) return;
+  editingCategoryId = id;
+  el('catName').value = cat.name || '';
+  el('categorySheetTitle').textContent = 'Редактировать раздел';
+  el('btnDeleteCategory').style.display = 'block';
+  overlay.classList.add('show');
+  el('categorySheet').classList.add('open');
+  pushSheetHistory();
+};
+
+el('categoryForm').onsubmit = function(e) {
+  e.preventDefault();
+  const name = el('catName').value.trim();
+  if (!name) return;
+
+  if (editingCategoryId) {
+    priceCategories = priceCategories.map(function(c) {
+      return c.id === editingCategoryId ? { id: c.id, name: name } : c;
+    });
+  } else {
+    priceCategories.push({ id: uid(), name: name });
+  }
+  try { localStorage.setItem('nail_price_categories', JSON.stringify(priceCategories)); } catch(e) {}
+  closeAllSheets();
+  renderPrice();
+};
+
+el('btnDeleteCategory').onclick = function() {
+  if (!editingCategoryId) return;
+  const catId = editingCategoryId;
+  const cat = priceCategories.find(function(c) { return c.id === catId; });
+  if (!cat) return;
+  const inCat = services.filter(function(s) { return s.catId === catId; });
+  const msg = inCat.length > 0
+    ? 'В разделе «' + cat.name + '» есть ' + inCat.length + ' услуг(и). Они тоже будут удалены безвозвратно!'
+    : 'Раздел «' + cat.name + '» будет удалён.';
+  showConfirm(
+    'Удалить раздел?',
+    msg,
+    'Да, удалить',
+    function() {
+      priceCategories = priceCategories.filter(function(c) { return c.id !== catId; });
+      services = services.filter(function(s) { return s.catId !== catId; });
+      try {
+        localStorage.setItem('nail_price_categories', JSON.stringify(priceCategories));
+        localStorage.setItem('nail_services', JSON.stringify(services));
+      } catch(e) {}
+      if (currentPriceCategory === catId) currentPriceCategory = null;
+      renderPrice();
+    },
+    true
+  );
+};
+
+window.openCategory = function(id) {
+  if (suppressCatClick) return;
+  currentPriceCategory = id; renderPrice(); pushNav('category');
+};
 window.closeCategory = function() {
   currentPriceCategory = null; renderPrice();
   if (navStack[navStack.length - 1] === 'category') popNavSelf();
@@ -3240,10 +3558,12 @@ function doCloseAllSheetsInternal() {
   el('statusSheet').classList.remove('open');
   el('serviceSheet').classList.remove('open');
   el('chartSheet').classList.remove('open');
+  el('categorySheet').classList.remove('open');
   el('welcomeSheet').classList.remove('open');
   editingId = null;
   currentQuickId = null;
   editingServiceId = null;
+  editingCategoryId = null;
   confirmCallback = null;
   confirmKeepParent = false;
 }
@@ -3294,6 +3614,7 @@ window.handleOverlayClick = function() {
         !el('confirmSheet').classList.contains('open') &&
         !el('statusSheet').classList.contains('open') &&
         !el('priceSheet').classList.contains('open') &&
+        !el('categorySheet').classList.contains('open') &&
         !el('welcomeSheet').classList.contains('open')) {
       overlay.classList.remove('show');
       popSheetHistory();
@@ -3354,7 +3675,6 @@ window.openQuickView = function(id) {
   if (r.phone) {
     el('qPhoneActions').style.display = 'grid';
     el('qBtnCall').href = 'tel:' + r.phone;
-    el('qBtnMax').href = 'max://'; 
   } else {
     el('qPhoneActions').style.display = 'none';
   }
@@ -3503,7 +3823,10 @@ el('btnDeleteRecord').onclick = function() {
 };
 
 window.openPriceSheet = function() {
-  if (!currentPriceCategory) return;
+  if (!currentPriceCategory) {
+    openCategorySheet();
+    return;
+  }
   el('priceForm').reset();
   el('priceSheetTitle').textContent = 'Новая услуга';
   el('btnDeleteService').style.display = 'none';
@@ -3677,30 +4000,12 @@ el('bgClearBtn').onclick = function() {
 applyAppBg();
 
 const BACKUP_KEY = 'nail_last_backup';
-function pluralRecords(n) {
-  const m10 = n % 10, m100 = n % 100;
-  if (m10 === 1 && m100 !== 11) return n + ' запись';
-  if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return n + ' записи';
-  return n + ' записей';
-}
 function formatBackupStamp(ts) {
   const d = new Date(ts);
   if (isNaN(d.getTime())) return '';
-  const pad = (v) => String(v).padStart(2, '0');
-  const now = new Date();
-  const time = pad(d.getHours()) + ':' + pad(d.getMinutes());
-  const sameDay = d.getFullYear() === now.getFullYear() &&
-                  d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
-  if (sameDay) return 'сегодня в ' + time;
-
-  const y = new Date(now.getTime() - 86400000);
-  const isYesterday = d.getFullYear() === y.getFullYear() &&
-                      d.getMonth() === y.getMonth() && d.getDate() === y.getDate();
-  if (isYesterday) return 'вчера в ' + time;
-
-  const months = ['января','февраля','марта','апреля','мая','июня','июля',
-                  'августа','сентября','октября','ноября','декабря'];
-  return d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear() + ', ' + time;
+  const pad = function(v) { return String(v).padStart(2, '0'); };
+  return pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear() +
+         ' (' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ')';
 }
 function renderBackupInfo() {
   const out = el('backupInfoText');
@@ -3711,8 +4016,7 @@ function renderBackupInfo() {
     out.textContent = 'Последнее сохранение: ещё не было';
     return;
   }
-  out.textContent = 'Последнее сохранение: ' + formatBackupStamp(ts) +
-                    ' · ' + pluralRecords(records.length);
+  out.textContent = 'Последнее сохранение: ' + formatBackupStamp(ts);
 }
 function markBackupSaved() {
   try { localStorage.setItem(BACKUP_KEY, String(Date.now())); } catch (e) {}
@@ -3721,7 +4025,7 @@ function markBackupSaved() {
 
 window.exportData = function() {
   try {
-    const data = { records: records, services: services, exportedAt: new Date().toISOString() };
+    const data = { records: records, services: services, priceCategories: priceCategories, exportedAt: new Date().toISOString() };
     const json = JSON.stringify(data, null, 2);
     const blob = new Blob([json], {type: "application/json;charset=utf-8"});
     const url = URL.createObjectURL(blob);
@@ -3750,9 +4054,13 @@ el('importFile').onchange = function(e) {
       const data = JSON.parse(event.target.result);
       if(data.records) records = data.records;
       if(data.services) services = data.services;
+      if(Array.isArray(data.priceCategories) && data.priceCategories.length > 0) {
+        priceCategories = data.priceCategories;
+      }
       
       localStorage.setItem('nail_records', JSON.stringify(records));
       localStorage.setItem('nail_services', JSON.stringify(services));
+      localStorage.setItem('nail_price_categories', JSON.stringify(priceCategories));
       renderAll();
       alert('Данные успешно загружены!');
     } catch(err) {
@@ -3771,9 +4079,12 @@ window.clearData = function() {
     function() {
       records = [];
       services = [];
+      priceCategories = DEFAULT_PRICE_CATEGORIES.slice();
       localStorage.removeItem('nail_records');
       localStorage.removeItem('nail_services');
+      localStorage.removeItem('nail_price_categories');
       try { localStorage.removeItem(BACKUP_KEY); } catch (e) {}
+      currentPriceCategory = null;
       renderAll();
     }
   );
@@ -3790,6 +4101,7 @@ function renderAll() {
 
 setFormStatus('plan');
 applyVibrationSwitch();
+hideVibrationCardOnIOS();
 renderAll();
 </script>
 <script>
