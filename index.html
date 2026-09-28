@@ -235,6 +235,91 @@ html.glass-cards .screen {
   transform: none;
 }
 
+/* ====== Экран списка записей ====== */
+#app.show-monthlist #appHeader { display: none; }
+
+#screen-monthlist {
+  padding: 0 14px 90px;
+}
+/* Панель списка — grid: 36 / 1fr / 36 → заголовок строго по центру,
+   кнопка закрытия прижата вправо и выровнена по вертикали (align-items: center). */
+.monthlist-head {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: 36px 1fr 36px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  padding-top: calc(8px + env(safe-area-inset-top));
+  margin: 0 -14px 12px;
+  background: var(--panel-solid);
+  border-bottom: var(--glass-border);
+}
+html.glass-panels .monthlist-head {
+  background: var(--glass-panel-bg);
+  -webkit-backdrop-filter: var(--glass-panel-blur);
+  backdrop-filter: var(--glass-panel-blur);
+}
+
+.monthlist-title-wrap {
+  grid-column: 2;
+  min-width: 0;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.monthlist-title-line1 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.15;
+  letter-spacing: 0.2px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.monthlist-title-line2 {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  line-height: 1.15;
+  margin-top: 2px;
+  letter-spacing: 0.2px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Кнопка закрытия — 32×32, выровнена по вертикали grid'ом */
+.monthlist-close {
+  grid-column: 3;
+  justify-self: end;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: var(--glass-border);
+  border-radius: 10px;
+  color: var(--ink);
+  background: var(--panel2);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.monthlist-close:active { transform: scale(0.9); }
+.monthlist-close svg { width: 14px; height: 14px; }
+html.glass-panels .monthlist-close {
+  background: var(--glass-panel-bg);
+  -webkit-backdrop-filter: var(--glass-panel-blur);
+  backdrop-filter: var(--glass-panel-blur);
+}
+
 .scr-title { 
   font-size: 16px; font-weight: 700; 
   display:flex; align-items: center; gap:8px; 
@@ -307,7 +392,6 @@ html.glass-cards .screen {
   letter-spacing: -0.2px;
   text-align: center;
 }
-/* День недели (отдельная строка) */
 .welcome-day {
   font-size: 13px;
   color: var(--muted);
@@ -317,10 +401,9 @@ html.glass-cards .screen {
   letter-spacing: 0.2px;
   line-height: 1.2;
 }
-/* Дата (ниже дня недели, отдельной строкой) */
 .welcome-date {
-  font-size: 12px;
-  color: var(--dim);
+  font-size: 13px;
+  color: var(--muted);
   margin-top: 2px;
   text-align: center;
   font-weight: 600;
@@ -987,6 +1070,17 @@ html.glass-cards #welcomeSheet {
   font-family: "Nunito", sans-serif;
   line-height: 1;
 }
+
+/* Подпись разработчика в конце раздела «Настройки» */
+.app-dev-sign {
+  text-align: center;
+  padding: 26px 0 6px;
+  color: var(--dim);
+  font-size: 11px;
+  line-height: 1.6;
+  letter-spacing: 0.2px;
+  font-weight: 600;
+}
 </style>
 <style>
 
@@ -1168,6 +1262,12 @@ setTimeout(hideSplashScreen, 5000);
       </div>
       <div class="cal-card" style="margin-top:10px;">
         <div class="opt-row">
+          <div class="opt-title">Вибрация кнопок</div>
+          <button type="button" class="switch" id="vibrationSwitch" role="switch" aria-checked="true" aria-label="Вибрация при нажатии кнопок нижней панели" onclick="toggleVibration()"></button>
+        </div>
+      </div>
+      <div class="cal-card" style="margin-top:10px;">
+        <div class="opt-row">
           <div class="opt-title">Фон приложения</div>
           <div class="opt-actions">
             <button type="button" class="btn btn-mini" id="bgPickBtn">Выбрать</button>
@@ -1194,6 +1294,25 @@ setTimeout(hideSplashScreen, 5000);
           <button class="btn btn-danger" onclick="clearData()">Очистить все данные</button>
         </div>
       </div>
+
+      <div class="app-dev-sign">
+        <div>Разработчик: Яков Потопахин</div>
+        <div>г. Таганрог. Ростовская обл.</div>
+      </div>
+    </section>
+
+    <!-- ===== Экран списка записей (открывается из «Записей в месяце» / «Ожидают») ===== -->
+    <section class="screen" id="screen-monthlist">
+      <div class="monthlist-head">
+        <div class="monthlist-title-wrap">
+          <div class="monthlist-title-line1" id="monthListPageTitle">Записи</div>
+          <div class="monthlist-title-line2" id="monthListPageSubtitle">Месяц</div>
+        </div>
+        <button type="button" class="monthlist-close" onclick="closeMonthListPage()" aria-label="Закрыть">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div id="monthListPageBody"></div>
     </section>
   </main>
 
@@ -1417,6 +1536,30 @@ let compareMonthY = new Date().getFullYear();
 let compareMonthM = new Date().getMonth();
 const MAX_MONTHS_BACK = 24;
 
+/* ====== Вибрация ====== */
+const VIBRATION_KEY = 'nail_vibration';
+let vibrationEnabled = true;
+try { vibrationEnabled = localStorage.getItem(VIBRATION_KEY) !== '0'; } catch(e) {}
+
+function haptic(ms) {
+  if (!vibrationEnabled) return;
+  try { if (navigator.vibrate) navigator.vibrate(ms || 10); } catch(e) {}
+}
+
+function applyVibrationSwitch() {
+  const sw = document.getElementById('vibrationSwitch');
+  if (sw) {
+    sw.classList.toggle('on', vibrationEnabled);
+    sw.setAttribute('aria-checked', vibrationEnabled ? 'true' : 'false');
+  }
+}
+window.toggleVibration = function() {
+  vibrationEnabled = !vibrationEnabled;
+  try { localStorage.setItem(VIBRATION_KEY, vibrationEnabled ? '1' : '0'); } catch(e) {}
+  applyVibrationSwitch();
+  if (vibrationEnabled) haptic(15); // дать отклик при включении
+};
+
 /* ====== WELCOME (карточка приветствия) ====== */
 let welcomeData = { photo: null, name: '' };
 try {
@@ -1441,13 +1584,11 @@ function getGreeting() {
   return 'Доброй ночи';
 }
 
-/* «Понедельник» — только название дня недели */
 function formatTodayDay() {
   const daysNom = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
   return daysNom[new Date().getDay()];
 }
 
-/* «28.09.2026» — только дата */
 function formatTodayDate() {
   const d = new Date();
   const pad = function(v) { return String(v).padStart(2, '0'); };
@@ -1756,6 +1897,11 @@ function popSheetHistory() {
   popNavSelf();
 }
 
+function popMonthlistHistory() {
+  if (navStack[navStack.length - 1] !== 'monthlist') return;
+  popNavSelf();
+}
+
 try {
   records = JSON.parse(localStorage.getItem('nail_records')) || [];
   if (!Array.isArray(records)) records = [];
@@ -1931,6 +2077,13 @@ let currentScreenIndex = 0;
 
 function switchScreen(index, fromHistory) {
   if(index < 0 || index >= screensList.length) return;
+
+  if (el('screen-monthlist').classList.contains('active')) {
+    el('screen-monthlist').classList.remove('active');
+    el('app').classList.remove('show-monthlist');
+    popMonthlistHistory();
+  }
+
   const prevScreen = screensList[currentScreenIndex];
   if (!fromHistory && index !== currentScreenIndex) {
     pushNav({ level: 'screen', back: prevScreen });
@@ -1959,8 +2112,12 @@ function switchScreen(index, fromHistory) {
   renderAll();
 }
 
+/* Кнопки нижней панели: с лёгкой вибрацией при нажатии */
 document.querySelectorAll('.tab-btn').forEach(function(btn, idx) {
-  btn.addEventListener('click', function() { switchScreen(idx); });
+  btn.addEventListener('click', function() {
+    haptic(10);
+    switchScreen(idx);
+  });
 });
 
 function applySwipe(element, onSwipeLeft, onSwipeRight, options) {
@@ -1989,8 +2146,20 @@ function applySwipe(element, onSwipeLeft, onSwipeRight, options) {
 }
 
 applySwipe(el('main'), 
-  function() { switchScreen(currentScreenIndex + 1); }, 
-  function() { switchScreen(currentScreenIndex - 1); }
+  function() {
+    if (el('screen-monthlist').classList.contains('active')) {
+      closeMonthListPage();
+      return;
+    }
+    switchScreen(currentScreenIndex + 1);
+  }, 
+  function() {
+    if (el('screen-monthlist').classList.contains('active')) {
+      closeMonthListPage();
+      return;
+    }
+    switchScreen(currentScreenIndex - 1);
+  }
 );
 
 applySwipe(el('calendarZone'),
@@ -2315,53 +2484,64 @@ function renderDayRecords() {
   el('dayRecordsList').innerHTML = dRecs.length ? dRecs.map(renderCard).join('') : '<div style="color:var(--dim); font-size:13px; text-align:center; padding:10px;">На этот день записей нет</div>';
 }
 
+/* ===== Экран списка записей (полноэкранный) ===== */
+window.openMonthListPage = function(title1, title2, arr, emptyText) {
+  el('monthListPageTitle').textContent = title1;
+  el('monthListPageSubtitle').textContent = title2;
+  el('monthListPageBody').innerHTML = arr.length
+    ? arr.map(renderCard).join('')
+    : '<div style="color:var(--dim); font-size:13px; text-align:center; padding:20px;">' + emptyText + '</div>';
+
+  document.querySelectorAll('#main > .screen').forEach(function(s) { s.classList.remove('active'); });
+  var screenEl = el('screen-monthlist');
+  screenEl.classList.add('active');
+  screenEl.scrollTop = 0;
+
+  el('app').classList.add('show-monthlist');
+
+  if (navStack[navStack.length - 1] !== 'monthlist') {
+    pushNav('monthlist');
+  }
+};
+
+window.closeMonthListPage = function() {
+  var screenEl = el('screen-monthlist');
+  if (!screenEl.classList.contains('active')) return;
+  screenEl.classList.remove('active');
+  el('app').classList.remove('show-monthlist');
+  var targetEl = el('screen-' + screensList[currentScreenIndex]);
+  if (targetEl) targetEl.classList.add('active');
+  popMonthlistHistory();
+};
+
 window.openPendingList = function() {
   const months = MONTHS_NAMES;
   const monthName = months[currentMonth] + ' ' + currentYear;
   const monthPrefix = currentYear + '-' + String(currentMonth + 1).padStart(2, '0');
-  
+
   const pending = records.filter(function(r) {
     return r.date && r.date.startsWith(monthPrefix) && r.status === 'plan';
   }).sort(function(a, b) {
     return ((b.date || '') + (b.time || '')).localeCompare((a.date || '') + (a.time || ''));
   });
-  
-  el('monthSheetTitle').textContent = 'Ожидают — ' + monthName;
-  
-  if (pending.length) {
-    el('monthSheetList').innerHTML = pending.map(renderCard).join('');
-  } else {
-    el('monthSheetList').innerHTML = '<div style="color:var(--dim); font-size:13px; text-align:center; padding:20px;">В этом месяце нет ожидающих клиенток</div>';
-  }
-  
-  overlay.classList.add('show');
-  el('monthSheet').classList.add('open');
-  pushSheetHistory();
+
+  openMonthListPage('Ожидают', monthName, pending, 'В этом месяце нет ожидающих клиенток');
 };
 
 window.openMonthRecordsList = function() {
   const months = MONTHS_NAMES;
   const monthName = months[currentMonth] + ' ' + currentYear;
   const monthPrefix = currentYear + '-' + String(currentMonth + 1).padStart(2, '0');
-  
+
   const allMonth = records.filter(function(r) {
     return r.date && r.date.startsWith(monthPrefix);
   }).sort(function(a, b) {
     return ((b.date || '') + (b.time || '')).localeCompare((a.date || '') + (a.time || ''));
   });
-  
-  el('monthSheetTitle').textContent = 'Все записи — ' + monthName;
-  
-  if (allMonth.length) {
-    el('monthSheetList').innerHTML = allMonth.map(renderCard).join('');
-  } else {
-    el('monthSheetList').innerHTML = '<div style="color:var(--dim); font-size:13px; text-align:center; padding:20px;">В этом месяце записей нет</div>';
-  }
-  
-  overlay.classList.add('show');
-  el('monthSheet').classList.add('open');
-  pushSheetHistory();
+
+  openMonthListPage('Все записи', monthName, allMonth, 'В этом месяце записей нет');
 };
+/* =========================================== */
 
 function hasDoneInMonth(y, m) {
   const prefix = y + '-' + String(m + 1).padStart(2, '0');
@@ -3082,6 +3262,12 @@ window.addEventListener('popstate', function() {
   } else if (level === 'category') {
     currentPriceCategory = null;
     renderPrice();
+  } else if (level === 'monthlist') {
+    var mEl = el('screen-monthlist');
+    mEl.classList.remove('active');
+    el('app').classList.remove('show-monthlist');
+    var targetEl = el('screen-' + screensList[currentScreenIndex]);
+    if (targetEl) targetEl.classList.add('active');
   } else if (level && level.level === 'screen') {
     switchScreen(screensList.indexOf(level.back), true);
   }
@@ -3603,6 +3789,7 @@ function renderAll() {
 }
 
 setFormStatus('plan');
+applyVibrationSwitch();
 renderAll();
 </script>
 <script>
