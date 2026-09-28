@@ -109,6 +109,29 @@
 }
 
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+/* --- СКРЫТИЕ ПОЛОСЫ ПРОКРУТКИ ---
+   TWA открывает приложение в настоящем Chrome, и Chrome рисует вертикальную полосу
+   прокрутки справа — как в браузере. Прячем её везде, но сама прокрутка остаётся.
+   Работает в Chrome/Edge/Safari (WebKit/Blink) и в Firefox. */
+* { scrollbar-width: none; -ms-overflow-style: none; }
+*::-webkit-scrollbar { width: 0; height: 0; display: none; background: transparent; }
+html, body, .screen, .sheet, #main, #selectSheet, .suggest-box {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+.screen::-webkit-scrollbar,
+.sheet::-webkit-scrollbar,
+#main::-webkit-scrollbar,
+.suggest-box::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+  background: transparent;
+}
+
 [hidden] { display:none!important; }
 html, body { height: 100%; width: 100%; overflow-x: hidden; overscroll-behavior: none; }
 html { background: var(--bg); }
