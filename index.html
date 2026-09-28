@@ -6,15 +6,11 @@
   _d.dataset.theme = localStorage.getItem("nail_theme") || "dark";
   var _bg = localStorage.getItem("nail_app_bg");
   if (_bg) _d.style.setProperty("--app-bg-image", 'url("' + _bg + '")');
-  // Стекло панелей по умолчанию включено — класс ставим сразу, чтобы панели не «мигали» плоскими
   if (localStorage.getItem("nail_tabbar_glass") !== "0") _d.classList.add("glass-panels");
+  if (localStorage.getItem("nail_cards_glass") !== "0") _d.classList.add("glass-cards");
 }catch(e){}</script>
 <meta charset="UTF-8">
 <script>
-/* iOS standalone (приложение с домашнего экрана): viewport «лжёт» — layout viewport
-   заканчивается над home indicator, но env(safe-area-inset-bottom) всё равно отдаёт
-   полный отступ (WebKit bug 254868). Измеряем реальный зазор и гасим двойной отступ
-   в нижней панели, а страницу растягиваем на весь экран (vh в standalone включает safe-area). */
 (function () {
   try {
     var standalone = (navigator.standalone === true) ||
@@ -43,9 +39,6 @@
 <style>
 :root {
   --bg: #18161a; 
-  /* Карточки и элементы внутри них — непрозрачные: фон приложения не должен
-     просвечивать сквозь интерфейс (иначе всё выглядит как «стекло»).
-     Полупрозрачные поверхности есть только у панелей — при включённом стекле. */
   --panel: #1f1e22; 
   --panel2: #2b2a30; 
   --panel-solid: #1f1e22;
@@ -65,10 +58,10 @@
   --glass-border: 1px solid rgba(255, 255, 255, 0.08);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   --glass-blur: none;
-  /* Панель со включённым «эффектом стекла» (см. html.glass-panels) */
-  --glass-panel-bg: rgba(30, 29, 33, 0.66);
-  /* Фон приложения: заводская картинка из папки main; подложка (scrim) приглушает
-     картинку, чтобы белый текст читался поверх неё. */
+  --glass-panel-bg: rgba(30, 29, 33, 0.33);
+  --glass-panel-blur: blur(10px);
+  --glass-card-bg: rgba(31, 30, 34, 0.19);
+  --glass-card-blur: blur(10px);
   --app-bg-image: url("main/fon_1.jpg");
   --app-bg-scrim: linear-gradient(rgba(24, 22, 26, 0.5), rgba(24, 22, 26, 0.68));
   --stat-lbl: #ffffff;
@@ -98,7 +91,10 @@
   --glass-border: 1px solid rgba(255, 255, 255, 0.8);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
   --glass-blur: none;
-  --glass-panel-bg: rgba(255, 255, 255, 0.66);
+  --glass-panel-bg: rgba(255, 255, 255, 0.33);
+  --glass-panel-blur: blur(10px);
+  --glass-card-bg: rgba(255, 255, 255, 0.21);
+  --glass-card-blur: blur(10px);
   --app-bg-image: url("main/fon_1.jpg");
   --app-bg-scrim: linear-gradient(rgba(253, 250, 251, 0.55), rgba(253, 250, 251, 0.72));
   --stat-lbl: #000000;
@@ -110,10 +106,6 @@
 
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 
-/* --- СКРЫТИЕ ПОЛОСЫ ПРОКРУТКИ ---
-   TWA открывает приложение в настоящем Chrome, и Chrome рисует вертикальную полосу
-   прокрутки справа — как в браузере. Прячем её везде, но сама прокрутка остаётся.
-   Работает в Chrome/Edge/Safari (WebKit/Blink) и в Firefox. */
 * { scrollbar-width: none; -ms-overflow-style: none; }
 *::-webkit-scrollbar { width: 0; height: 0; display: none; background: transparent; }
 html, body, .screen, .sheet, #main, #selectSheet, .suggest-box {
@@ -143,11 +135,7 @@ body {
 body::before {
   content:"";
   position:fixed; inset:-14px; z-index:0; pointer-events:none;
-  /* inset:-14px — запас под размытие: без него по краям экрана проступает
-     «серая» кайма от blur. Слой fixed, поэтому страница от этого не растягивается. */
   filter: blur(1.5px);
-  /* Слои фона рисуются снизу вверх: последний в списке — самый нижний.
-     Подложка (scrim) идёт ПЕРВОЙ, т.е. поверх картинки — иначе она не видна. */
   background:
     var(--app-bg-scrim),
     var(--app-bg-image) center center / cover no-repeat,
@@ -165,10 +153,6 @@ body.app-loading #app {
   pointer-events: none;
 }
 
-/* --- Заставка запуска (splash) ---
-   Фон повторяет body::before (те же переменные --app-bg-scrim / --app-bg-image и blur(6px)),
-   поверх — логотип-текст шрифтом Nunito 800.
-   Скрывается через JS добавлением класса .hidden и снятием app-loading с body. */
 #splash {
   position: fixed; inset: 0; z-index: 9999;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -245,6 +229,12 @@ h1 .accent { color: var(--blue); }
   overscroll-behavior: contain;
 }
 .screen.active { opacity:1; visibility:visible; transform:none; }
+
+html.glass-cards .screen {
+  transition: none;
+  transform: none;
+}
+
 .scr-title { 
   font-size: 16px; font-weight: 700; 
   display:flex; align-items: center; gap:8px; 
@@ -260,6 +250,126 @@ h1 .accent { color: var(--blue); }
   letter-spacing: 0.3px;
 }
 .home-section-title:first-child { margin-top: 0; }
+
+/* ====== КАРТОЧКА ПРИВЕТСТВИЯ ====== */
+.welcome-card {
+  position: relative;
+  border-radius: 16px;
+  padding: 12px;
+  margin-bottom: 10px;
+  background: var(--panel);
+  border: var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+  overflow: hidden;
+}
+.welcome-card:active { transform: scale(0.985); border-color: var(--blue); }
+
+.welcome-thumb {
+  width: 72px;
+  height: 96px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--panel2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.welcome-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.welcome-plus {
+  font-size: 40px;
+  font-weight: 300;
+  color: var(--dim);
+  line-height: 1;
+}
+
+.welcome-text { flex: 1; min-width: 0; }
+.welcome-greeting {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.15;
+  letter-spacing: -0.2px;
+  text-align: center;
+}
+.welcome-name {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.15;
+  margin-top: 2px;
+  letter-spacing: -0.2px;
+  text-align: center;
+}
+/* День недели (отдельная строка) */
+.welcome-day {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 8px;
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  line-height: 1.2;
+}
+/* Дата (ниже дня недели, отдельной строкой) */
+.welcome-date {
+  font-size: 12px;
+  color: var(--dim);
+  margin-top: 2px;
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  line-height: 1.2;
+}
+.welcome-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 3px;
+  text-align: center;
+}
+
+/* ====== ШТОРКА РЕДАКТИРОВАНИЯ ПРИВЕТСТВИЯ ====== */
+.welcome-crop {
+  position: relative;
+  width: 100%;
+  max-width: 220px;
+  aspect-ratio: 3/4;
+  margin: 0 auto;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--panel2);
+  border: var(--glass-border);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.welcome-crop-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 52px;
+  font-weight: 300;
+  color: var(--dim);
+  pointer-events: none;
+}
+#welcomeCropImg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(1);
+  transform-origin: center center;
+  will-change: transform;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
 
 .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px;}
 .stat {
@@ -295,11 +405,8 @@ h1 .accent { color: var(--blue); }
   transition: transform 0.15s ease, border-color 0.15s ease;
   box-shadow: 0 1px 3px rgba(0,0,0,0.18);
 }
-[data-theme="light"] .r-card {
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-}
+[data-theme="light"] .r-card { box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
 .r-card:active { transform: scale(0.985); border-color: var(--blue); }
-
 .r-card::before {
   content: "";
   position: absolute;
@@ -312,8 +419,6 @@ h1 .accent { color: var(--blue); }
 .r-card.s-done::before { background: var(--green); }
 .r-card.s-cancel::before { background: var(--red); }
 
-/* Верхняя часть карточки — сетка 2×2: слева дата/имя, справа бейджи друг под другом.
-   Оба бейджа по правому краю прижаты к одной вертикали (justify-self: end). */
 .r-head {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -324,7 +429,7 @@ h1 .accent { color: var(--blue); }
   row-gap: 4px;
   align-items: center;
   margin-bottom: 6px;
-  padding-right: 16px; /* место под абсолютный шеврон в правом верхнем углу */
+  padding-right: 16px;
 }
 .r-date { 
   grid-area: date;
@@ -337,7 +442,6 @@ h1 .accent { color: var(--blue); }
 }
 .r-head .badge { grid-area: badge; justify-self: end; }
 .r-head .r-service { grid-area: service; justify-self: end; }
-
 .r-client { 
   grid-area: name;
   font-size: 16px; 
@@ -366,8 +470,6 @@ h1 .accent { color: var(--blue); }
 .b-done { background: var(--green-soft); color: var(--green); }
 .b-cancel { background: var(--red-soft); color: var(--red); }
 
-/* Шеврон вынесен из потока и прижат к правому верхнему углу карточки,
-   чтобы не сдвигать бейдж «Ожидает» влево (иначе правые края бейджей не совпадают). */
 .card-chev {
   position: absolute;
   top: 14px;
@@ -379,7 +481,6 @@ h1 .accent { color: var(--blue); }
   pointer-events: none;
 }
 
-/* Бейдж услуги — по высоте и размеру шрифта совпадает со статусным бейджем */
 .r-service {
   display: inline-block;
   font-size: 9px;
@@ -493,10 +594,6 @@ h1 .accent { color: var(--blue); }
   -webkit-background-clip: text;
   background-clip: text;
 }
-@keyframes dayoffGradient {
-  0%   { background-position: 0% center; }
-  100% { background-position: 250% center; }
-}
 
 @keyframes chartGrow {
   from { transform: scaleY(0); }
@@ -523,7 +620,6 @@ h1 .accent { color: var(--blue); }
   background: var(--panel2); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: var(--glass-border);
 }
 .search input:focus { border-color: var(--blue); }
-/* Крестик очистки поиска: появляется, только когда в поле есть текст */
 .search-clear {
   position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
   width: 24px; height: 24px; border: none; border-radius: 50%;
@@ -541,7 +637,6 @@ h1 .accent { color: var(--blue); }
 }
 .cal-head { display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px; font-weight:700; font-size:14px;}
 .cal-head span[onclick] { padding: 4px 10px !important; }
-.cal-nav btn { background: var(--panel2); border-radius:8px; padding:4px 10px; cursor:pointer;}
 .cal-grid { display:grid; grid-template-columns: repeat(7, 1fr); gap: 3px; text-align:center;}
 .cal-wd { font-size: 10px; font-weight: 700; color: var(--muted); margin-bottom: 3px;}
 
@@ -553,28 +648,11 @@ h1 .accent { color: var(--blue); }
 }
 .day:active { transform: scale(0.9); }
 .day.weekend { color: var(--blue); } 
-.day.has-done { 
-  background: rgba(74, 222, 128, 0.15); 
-  border-color: var(--green); 
-  color: var(--green); 
-}
-.day.has-pending { 
-  background: rgba(255, 167, 38, 0.15); 
-  border-color: var(--blue); 
-  color: var(--blue); 
-}
-.day.has-cancel { 
-  background: rgba(248, 113, 113, 0.15); 
-  border-color: var(--red); 
-  color: var(--red); 
-}
+.day.has-done { background: rgba(74, 222, 128, 0.15); border-color: var(--green); color: var(--green); }
+.day.has-pending { background: rgba(255, 167, 38, 0.15); border-color: var(--blue); color: var(--blue); }
+.day.has-cancel { background: rgba(248, 113, 113, 0.15); border-color: var(--red); color: var(--red); }
 .day.sel { border-color: #ffffff; }
-.day.today { 
-  background: var(--blue); 
-  color: var(--on-accent) !important; 
-  font-weight: 800; 
-  border-color: transparent;
-}
+.day.today { background: var(--blue); color: var(--on-accent) !important; font-weight: 800; border-color: transparent; }
 
 @keyframes slideNext {
   0% { transform: translateX(20px); opacity: 0; }
@@ -588,20 +666,11 @@ h1 .accent { color: var(--blue); }
 .slide-prev { animation: slidePrev 0.3s ease-out forwards; }
 
 .month-nav {
-  position: absolute;
-  top: 6px;
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  font-size: 20px;
-  font-weight: 300;
-  line-height: 1;
-  user-select: none;
-  -webkit-user-select: none;
-  border-radius: 8px;
-  transition: background 0.15s, color 0.15s;
-  z-index: 2;
+  position: absolute; top: 6px; width: 30px; height: 30px;
+  display: grid; place-items: center;
+  font-size: 20px; font-weight: 300; line-height: 1;
+  user-select: none; -webkit-user-select: none;
+  border-radius: 8px; transition: background 0.15s, color 0.15s; z-index: 2;
 }
 .month-nav.left { left: 6px; }
 .month-nav.right { right: 6px; }
@@ -619,15 +688,8 @@ h1 .accent { color: var(--blue); }
 }
 .price-card:active { transform: scale(0.98); border-color: var(--blue); }
 .price-card::after {
-  content: '›';
-  position: absolute;
-  top: 6px;
-  right: 10px;
-  color: var(--dim);
-  font-size: 18px;
-  line-height: 1;
-  font-weight: 300;
-  pointer-events: none;
+  content: '›'; position: absolute; top: 6px; right: 10px;
+  color: var(--dim); font-size: 18px; line-height: 1; font-weight: 300; pointer-events: none;
 }
 .pc-left strong { display:flex; align-items:center; gap:6px; font-size:14px; margin-bottom:2px;}
 .pc-left span { font-size:11px; color:var(--muted); }
@@ -648,7 +710,6 @@ h1 .accent { color: var(--blue); }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
 .btn:disabled:active { transform: none; }
 
-/* --- Переключатель настроек (--glass и т.п.) --- */
 .opt-row {
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px; padding: 4px 0;
@@ -656,7 +717,6 @@ h1 .accent { color: var(--blue); }
 .opt-row .opt-txt { min-width: 0; }
 .opt-row .opt-title { font: 600 14px system-ui, -apple-system, Roboto, sans-serif; color: var(--ink); }
 .opt-row .opt-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
-/* Кнопки справа от названия настройки (карточка «Фон приложения») */
 .opt-actions { display: flex; align-items: center; gap: 8px; flex: none; }
 .btn-mini { width: auto; padding: 8px 14px; font-size: 13px; border-radius: 10px; box-shadow: none; }
 .switch {
@@ -672,22 +732,33 @@ h1 .accent { color: var(--blue); }
   transition: transform 0.2s, background 0.2s;
 }
 .switch.on { background: var(--blue); border-color: var(--blue); }
-/* Во включённом состоянии кружок белый (на оранжевом фоне) — см. настройку «Эффект стекла панелей» */
 .switch.on::after { transform: translateX(19px); background: #ffffff; }
 .switch:active::after { width: 26px; }
 .switch.on:active::after { transform: translateX(16px); }
 
-/* Стекло верхней и нижней панели (переключатель в разделе «Настройки»).
-   Только эти две панели получают полупрозрачный фон и размытие — карточки,
-   шторки и всё остальное остаются непрозрачными. */
 html.glass-panels #appHeader,
 html.glass-panels #tabbar {
   background: var(--glass-panel-bg);
-  -webkit-backdrop-filter: blur(20px);
-  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: var(--glass-panel-blur);
+  backdrop-filter: var(--glass-panel-blur);
 }
 html.glass-panels #appHeader > *,
 html.glass-panels #tabbar .tab-btn { position: relative; z-index: 1; }
+
+html.glass-cards .stat,
+html.glass-cards .cal-card,
+html.glass-cards .price-card,
+html.glass-cards .dayoff-card,
+html.glass-cards .r-card,
+html.glass-cards .welcome-card,
+html.glass-cards .search input,
+html.glass-cards #themeBtn,
+html.glass-cards #priceBtnBack,
+html.glass-cards #priceBtnAdd {
+  background: var(--glass-card-bg);
+  -webkit-backdrop-filter: var(--glass-card-blur);
+  backdrop-filter: var(--glass-card-blur);
+}
 
 #btnCalendarAdd { font-size: 16px; font-weight: 800; padding: 14px; }
 
@@ -699,16 +770,11 @@ html.glass-panels #tabbar .tab-btn { position: relative; z-index: 1; }
 }
 .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--blue); }
 
-/* Safari/iOS: поля type="time"/"date" рисуются как inline-flex и игнорируют width:100% —
-   из-за этого «уезжают» за правый край шторки. display:block возвращает ширину 100%,
-   appearance:none убирает нативный слой Safari, который рисуется шире бокса и не режется
-   overflow:hidden родителя. */
 .field input[type="time"],
 .field input[type="date"],
 .field input[type="datetime-local"] {
   display: block; -webkit-appearance: none; appearance: none; text-align: left;
 }
-/* Собственные отступы внутренних частей (shadow DOM) ломают высоту поля в Safari */
 .field input[type="time"]::-webkit-datetime-edit,
 .field input[type="time"]::-webkit-datetime-edit-fields-wrapper,
 .field input[type="time"]::-webkit-datetime-edit-text,
@@ -747,7 +813,6 @@ html.glass-panels #tabbar .tab-btn { position: relative; z-index: 1; }
 #serviceSheet { z-index: 55; background: var(--bg); }
 #fServiceLabel.is-empty { color: var(--dim); font-weight: 400; }
 
-/* Подсказки клиентов по имени в карточке записи */
 .suggest-box {
   position: absolute; left: 0; right: 0; top: 100%; margin-top: 6px;
   background: var(--bg); border: var(--glass-border); border-radius: 14px;
@@ -776,23 +841,16 @@ html.glass-panels #tabbar .tab-btn { position: relative; z-index: 1; }
 .status-option:active { background: var(--panel2); }
 .status-option-lbl { font-size: 15px; font-weight: 700; color: var(--ink); }
 .status-option-radio {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
+  width: 22px; height: 22px; border-radius: 50%;
   border: 2px solid var(--muted);
-  box-sizing: border-box;
-  position: relative;
-  transition: 0.15s;
-  flex-shrink: 0;
+  box-sizing: border-box; position: relative;
+  transition: 0.15s; flex-shrink: 0;
 }
 .status-option-radio::after {
   content: "";
-  position: absolute;
-  inset: 5px;
-  border-radius: 50%;
-  background: var(--on-accent);
-  opacity: 0;
-  transition: 0.15s;
+  position: absolute; inset: 5px;
+  border-radius: 50%; background: var(--on-accent);
+  opacity: 0; transition: 0.15s;
 }
 .status-option.selected .status-option-radio { border-color: var(--blue); background: var(--blue); }
 .status-option.selected .status-option-radio::after { opacity: 1; }
@@ -837,8 +895,6 @@ html.glass-panels #tabbar .tab-btn { position: relative; z-index: 1; }
 #tabbar {
   display:grid; grid-template-columns: repeat(5, 1fr); 
   padding: 8px 4px calc(8px + max(env(safe-area-inset-bottom, 0px) - var(--ios-bottom-gap, 0px), 0px));
-  /* Боковые отступы: плотнее, чем было (4px), но не меньше 20px и не меньше safe-area —
-     иначе крайние иконки на iPhone заезжают под скруглённые углы экрана и обрезаются. */
   padding-left: max(env(safe-area-inset-left, 0px), 20px);
   padding-right: max(env(safe-area-inset-right, 0px), 20px);
   position:fixed; bottom:0; width:100%; max-width:520px; z-index: 20;
@@ -882,6 +938,16 @@ html.glass-panels #tabbar .tab-btn { position: relative; z-index: 1; }
 }
 .icon-btn svg { width: 16px; height: 16px; }
 
+#welcomeSheet {
+  z-index: 55;
+  background: var(--bg);
+}
+html.glass-cards #welcomeSheet {
+  background: var(--glass-card-bg);
+  -webkit-backdrop-filter: var(--glass-card-blur);
+  backdrop-filter: var(--glass-card-blur);
+}
+
 .q-client-name { font-size: 20px; font-weight: 800; margin-bottom: 10px; color: var(--ink); }
 .q-service-pill {
   display: inline-block;
@@ -922,26 +988,12 @@ html.glass-panels #tabbar .tab-btn { position: relative; z-index: 1; }
   line-height: 1;
 }
 </style>
-<!-- Оформление единое для всех платформ (Android, iOS, браузер на ПК): размытие фона («стекло»)
-     выключено везде, шапка / нижняя панель / всплывающие окна непрозрачные, анимации и свечения
-     отключены — именно так выглядело приложение на Android (Capacitor), где WebView дорого
-     пере-размывает фон под прокручиваемым содержимым. Фон под открытым окном размывается в любом
-     случае — это статичное размытие, оно дешёвое. -->
 <style>
 
-/* --- Установленное приложение на iOS (standalone) ---
-   Баг WebKit #254868: при viewport-fit=cover в standalone layout viewport заканчивается
-   над home indicator, но env(safe-area-inset-bottom) всё равно возвращает полный отступ.
-   Из-за этого панель уезжает вверх, а под ней остаётся чёрная полоса.
-   --ios-bottom-gap измеряется скриптом в <head> (screen.height − clientHeight). */
 html.is-standalone,
-html.is-standalone body { min-height: 100vh; }   /* vh в standalone включает safe-area — закрашиваем полосу */
-html.is-standalone #app { height: 100vh; }         /* dvh в standalone короче экрана */
-html.is-standalone .sheet { top: calc(50% + var(--ios-bottom-gap, 0px) / 2); } /* центрируем по реальному экрану */
-/* Нижняя панель в standalone: подписи опускаем ближе к низу экрана.
-   Вклад safe-area ограничен 20px — на iPhone он равен ~34px, и из-за него подписи
-   висели высоко над краем. 20px + 4px достаточно, чтобы не наехать
-   на «домашнюю полоску» (она рисуется у самого низа, ~5px). */
+html.is-standalone body { min-height: 100vh; }
+html.is-standalone #app { height: 100vh; }
+html.is-standalone .sheet { top: calc(50% + var(--ios-bottom-gap, 0px) / 2); }
 html.is-standalone #tabbar {
   padding-bottom: calc(4px + min(env(safe-area-inset-bottom, 0px), 20px));
 }
@@ -957,7 +1009,6 @@ html.is-standalone #tabbar {
 <meta name="application-name" content="Мастер маникюра">
 </head>
 <body class="app-loading">
-<!-- Заставка запуска: «МАСТЕР» → «МАНИКЮРА» → плавное затухание (управляется hideSplashScreen). -->
 <div id="splash" aria-hidden="true">
   <div class="splash-word" id="splashW1">МАСТЕР</div>
   <div class="splash-word" id="splashW2">МАНИКЮРА</div>
@@ -971,7 +1022,6 @@ function hideSplashScreen() {
     if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
   }, 900);
 }
-/* Запуск скрытия заставки через 3.8с (после последовательного появления обоих слов) */
 if (document.readyState === 'complete') {
   setTimeout(hideSplashScreen, 3800);
 } else {
@@ -979,7 +1029,6 @@ if (document.readyState === 'complete') {
     setTimeout(hideSplashScreen, 3800);
   });
 }
-/* Защитный таймер: если событие load по какой-то причине задерживается */
 setTimeout(hideSplashScreen, 5000);
 </script>
 <div id="app">
@@ -999,6 +1048,8 @@ setTimeout(hideSplashScreen, 5000);
 
   <main id="main">
     <section class="screen active" id="screen-home">
+      <div id="welcomeWrap"></div>
+
       <div class="stats">
         <div class="stat">
           <div class="lbl">Доход за сегодня</div>
@@ -1111,6 +1162,12 @@ setTimeout(hideSplashScreen, 5000);
       </div>
       <div class="cal-card" style="margin-top:10px;">
         <div class="opt-row">
+          <div class="opt-title">Эффект стекла карточек</div>
+          <button type="button" class="switch" id="glassCardsSwitch" role="switch" aria-checked="true" aria-label="Эффект стекла карточек" onclick="toggleGlassCards()"></button>
+        </div>
+      </div>
+      <div class="cal-card" style="margin-top:10px;">
+        <div class="opt-row">
           <div class="opt-title">Фон приложения</div>
           <div class="opt-actions">
             <button type="button" class="btn btn-mini" id="bgPickBtn">Выбрать</button>
@@ -1166,6 +1223,29 @@ setTimeout(hideSplashScreen, 5000);
   </nav>
 
   <div id="overlay" onclick="handleOverlayClick()"></div>
+
+  <div class="sheet" id="welcomeSheet">
+    <div class="sheet-head">
+      <h2>Приветствие</h2>
+      <button class="icon-btn" type="button" onclick="closeWelcomeSheet()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+
+    <div class="welcome-crop" id="welcomeCropView">
+      <div class="welcome-crop-empty" id="welcomeCropEmpty">+</div>
+      <img id="welcomeCropImg" hidden alt="">
+    </div>
+
+    <input type="file" id="welcomeFileInput" accept="image/*" hidden>
+    <button type="button" class="btn btn-outline" style="margin-top:12px;" onclick="pickWelcomePhoto()">Выбрать фото</button>
+
+    <div class="field" style="margin-top:16px;">
+      <label>Имя</label>
+      <input type="text" id="welcomeNameInput" placeholder="Катя" maxlength="20">
+    </div>
+
+    <button type="button" class="btn" style="margin-top:12px;" onclick="saveWelcome()">Готово</button>
+    <button type="button" class="btn btn-outline" id="welcomeDeleteBtn" style="margin-top:8px; display:none; color:var(--red); border-color:var(--red-soft);" onclick="deleteWelcome()">Удалить</button>
+  </div>
 
   <div class="sheet" id="quickSheet">
     <div class="sheet-head" style="margin-bottom: 10px;">
@@ -1337,12 +1417,314 @@ let compareMonthY = new Date().getFullYear();
 let compareMonthM = new Date().getMonth();
 const MAX_MONTHS_BACK = 24;
 
-/* ========== HISTORY (свайп-назад) ========== */
-/* Каждый открытый уровень (вкладка, категория прайса, шторка) добавляет
-   запись в историю WebView. Свайп-назад снимает уровни по одному,
-   и только когда записей больше нет — Android закрывает приложение.
-   navStack — зеркало записей истории; selfPops — сколько history.back()
-   вызвано самим приложением и ещё не обработано обработчиком popstate. */
+/* ====== WELCOME (карточка приветствия) ====== */
+let welcomeData = { photo: null, name: '' };
+try {
+  const saved = JSON.parse(localStorage.getItem('nail_welcome'));
+  if (saved && typeof saved === 'object') {
+    welcomeData = { photo: saved.photo || null, name: String(saved.name || '').slice(0, 20) };
+  }
+} catch(e) {}
+
+const welcomeEdit = { img: null, loaded: false, scale: 1, x: 0, y: 0 };
+let welcomeCoverScale = 1;
+const welcomeTouch = {
+  dragging: false, startX: 0, startY: 0, startOffX: 0, startOffY: 0,
+  pinching: false, startDist: 0, startScale: 1
+};
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 12) return 'Доброе утро';
+  if (h >= 12 && h < 18) return 'Добрый день';
+  if (h >= 18 && h < 23) return 'Добрый вечер';
+  return 'Доброй ночи';
+}
+
+/* «Понедельник» — только название дня недели */
+function formatTodayDay() {
+  const daysNom = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+  return daysNom[new Date().getDay()];
+}
+
+/* «28.09.2026» — только дата */
+function formatTodayDate() {
+  const d = new Date();
+  const pad = function(v) { return String(v).padStart(2, '0'); };
+  return pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear();
+}
+
+function renderWelcome() {
+  const wrap = document.getElementById('welcomeWrap');
+  if (!wrap) return;
+  const hasPhoto = !!welcomeData.photo;
+  const hasName = !!welcomeData.name;
+  const greeting = getGreeting();
+  const todayDay = formatTodayDay();
+  const todayDate = formatTodayDate();
+
+  const thumbHtml = hasPhoto
+    ? '<div class="welcome-thumb"><img src="' + welcomeData.photo + '" alt=""></div>'
+    : '<div class="welcome-thumb"><span class="welcome-plus">+</span></div>';
+
+  let textHtml;
+  if (hasName) {
+    textHtml = '<div class="welcome-text">' +
+                 '<div class="welcome-greeting">' + greeting + '</div>' +
+                 '<div class="welcome-name">' + escapeHtml(welcomeData.name) + '!</div>' +
+                 '<div class="welcome-day">' + todayDay + '</div>' +
+                 '<div class="welcome-date">' + todayDate + '</div>' +
+               '</div>';
+  } else {
+    textHtml = '<div class="welcome-text">' +
+                 '<div class="welcome-greeting">' + greeting + '</div>' +
+                 '<div class="welcome-day">' + todayDay + '</div>' +
+                 '<div class="welcome-date">' + todayDate + '</div>' +
+                 '<div class="welcome-hint">Нажмите, чтобы добавить фото и имя</div>' +
+               '</div>';
+  }
+
+  wrap.innerHTML = '<div class="welcome-card" onclick="openWelcomeSheet()">' + thumbHtml + textHtml + '</div>';
+}
+
+function applyWelcomeTransform() {
+  const img = document.getElementById('welcomeCropImg');
+  if (!img) return;
+  img.style.transform = 'translate(-50%, -50%) translate(' + welcomeEdit.x + 'px, ' + welcomeEdit.y + 'px) scale(' + welcomeEdit.scale + ')';
+}
+
+function fitWelcomeImage() {
+  const crop = document.getElementById('welcomeCropView');
+  const img = welcomeEdit.img;
+  if (!crop || !img) return;
+  const cw = crop.clientWidth;
+  const ch = crop.clientHeight;
+  const iw = img.naturalWidth;
+  const ih = img.naturalHeight;
+  if (!cw || !ch || !iw || !ih) return;
+  welcomeCoverScale = Math.max(cw / iw, ch / ih);
+  welcomeEdit.scale = welcomeCoverScale;
+  welcomeEdit.x = 0;
+  welcomeEdit.y = 0;
+  applyWelcomeTransform();
+}
+
+window.openWelcomeSheet = function() {
+  document.getElementById('welcomeNameInput').value = welcomeData.name || '';
+  document.getElementById('welcomeCropEmpty').style.display = '';
+  document.getElementById('welcomeCropImg').hidden = true;
+  welcomeEdit.img = null;
+  welcomeEdit.loaded = false;
+  welcomeEdit.scale = 1;
+  welcomeEdit.x = 0;
+  welcomeEdit.y = 0;
+
+  if (welcomeData.photo) {
+    const img = new Image();
+    img.onload = function() {
+      welcomeEdit.img = img;
+      welcomeEdit.loaded = true;
+      const cropImg = document.getElementById('welcomeCropImg');
+      cropImg.src = welcomeData.photo;
+      cropImg.hidden = false;
+      document.getElementById('welcomeCropEmpty').style.display = 'none';
+      requestAnimationFrame(fitWelcomeImage);
+    };
+    img.onerror = function() {};
+    img.src = welcomeData.photo;
+  }
+
+  document.getElementById('welcomeDeleteBtn').style.display =
+    (welcomeData.photo || welcomeData.name) ? 'block' : 'none';
+
+  overlay.classList.add('show');
+  document.getElementById('welcomeSheet').classList.add('open');
+  pushSheetHistory();
+};
+
+window.closeWelcomeSheet = function() {
+  document.getElementById('welcomeSheet').classList.remove('open');
+  if (!el('quickSheet').classList.contains('open') && 
+      !el('recordSheet').classList.contains('open') && 
+      !el('monthSheet').classList.contains('open') &&
+      !el('confirmSheet').classList.contains('open') &&
+      !el('statusSheet').classList.contains('open') &&
+      !el('priceSheet').classList.contains('open') &&
+      !el('chartSheet').classList.contains('open') &&
+      !el('serviceSheet').classList.contains('open')) {
+    overlay.classList.remove('show');
+    popSheetHistory();
+  }
+};
+
+window.pickWelcomePhoto = function() {
+  document.getElementById('welcomeFileInput').click();
+};
+
+document.getElementById('welcomeFileInput').addEventListener('change', function(e) {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  if (file.type.indexOf('image/') !== 0) {
+    alert('Выберите файл изображения.');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const img = new Image();
+    img.onload = function() {
+      welcomeEdit.img = img;
+      welcomeEdit.loaded = true;
+      welcomeEdit.scale = 1;
+      welcomeEdit.x = 0;
+      welcomeEdit.y = 0;
+      const cropImg = document.getElementById('welcomeCropImg');
+      cropImg.src = ev.target.result;
+      cropImg.hidden = false;
+      document.getElementById('welcomeCropEmpty').style.display = 'none';
+      requestAnimationFrame(fitWelcomeImage);
+    };
+    img.onerror = function() { alert('Не удалось открыть картинку. Попробуйте другую.'); };
+    img.src = ev.target.result;
+  };
+  reader.onerror = function() { alert('Не удалось прочитать файл.'); };
+  reader.readAsDataURL(file);
+});
+
+(function() {
+  const cropView = document.getElementById('welcomeCropView');
+  if (!cropView) return;
+
+  cropView.addEventListener('touchstart', function(e) {
+    if (!welcomeEdit.loaded) return;
+    if (e.touches.length === 1) {
+      welcomeTouch.dragging = true;
+      welcomeTouch.startX = e.touches[0].clientX;
+      welcomeTouch.startY = e.touches[0].clientY;
+      welcomeTouch.startOffX = welcomeEdit.x;
+      welcomeTouch.startOffY = welcomeEdit.y;
+      e.preventDefault();
+    } else if (e.touches.length === 2) {
+      welcomeTouch.dragging = false;
+      welcomeTouch.pinching = true;
+      const t1 = e.touches[0], t2 = e.touches[1];
+      welcomeTouch.startDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY) || 1;
+      welcomeTouch.startScale = welcomeEdit.scale;
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  cropView.addEventListener('touchmove', function(e) {
+    if (!welcomeEdit.loaded) return;
+    if (welcomeTouch.dragging && e.touches.length === 1) {
+      const curX = e.touches[0].clientX;
+      const curY = e.touches[0].clientY;
+      welcomeEdit.x = welcomeTouch.startOffX + (curX - welcomeTouch.startX);
+      welcomeEdit.y = welcomeTouch.startOffY + (curY - welcomeTouch.startY);
+      applyWelcomeTransform();
+      e.preventDefault();
+    } else if (welcomeTouch.pinching && e.touches.length === 2) {
+      const t1 = e.touches[0], t2 = e.touches[1];
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY) || 1;
+      let ns = welcomeTouch.startScale * (dist / welcomeTouch.startDist);
+      ns = Math.max(welcomeCoverScale, Math.min(welcomeCoverScale * 5, ns));
+      welcomeEdit.scale = ns;
+      applyWelcomeTransform();
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  cropView.addEventListener('touchend', function(e) {
+    if (e.touches.length === 0) {
+      welcomeTouch.dragging = false;
+      welcomeTouch.pinching = false;
+    } else if (e.touches.length === 1) {
+      welcomeTouch.pinching = false;
+      welcomeTouch.dragging = true;
+      welcomeTouch.startX = e.touches[0].clientX;
+      welcomeTouch.startY = e.touches[0].clientY;
+      welcomeTouch.startOffX = welcomeEdit.x;
+      welcomeTouch.startOffY = welcomeEdit.y;
+    }
+  }, { passive: true });
+
+  cropView.addEventListener('touchcancel', function() {
+    welcomeTouch.dragging = false;
+    welcomeTouch.pinching = false;
+  });
+})();
+
+function rasterizeWelcomePhoto() {
+  const img = welcomeEdit.img;
+  const crop = document.getElementById('welcomeCropView');
+  if (!img || !crop) return null;
+  const cw = crop.clientWidth;
+  const ch = crop.clientHeight;
+  if (!cw || !ch) return null;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 480;
+  canvas.height = 640;
+  const k = canvas.width / cw;
+
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.translate(welcomeEdit.x * k, welcomeEdit.y * k);
+  ctx.scale(welcomeEdit.scale * k, welcomeEdit.scale * k);
+  ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
+  ctx.restore();
+
+  try { return canvas.toDataURL('image/jpeg', 0.85); } catch(e) { return null; }
+}
+
+window.saveWelcome = function() {
+  const name = document.getElementById('welcomeNameInput').value.trim().slice(0, 20);
+  let photo = welcomeData.photo;
+
+  if (welcomeEdit.loaded) {
+    const newPhoto = rasterizeWelcomePhoto();
+    if (!newPhoto) {
+      alert('Не удалось обработать фото. Попробуйте другое.');
+      return;
+    }
+    photo = newPhoto;
+  }
+
+  welcomeData = { photo: photo || null, name: name };
+  try {
+    localStorage.setItem('nail_welcome', JSON.stringify(welcomeData));
+  } catch(e) {
+    alert('Не удалось сохранить: ' + (e && e.message ? e.message : 'хранилище переполнено'));
+    return;
+  }
+  closeWelcomeSheet();
+  renderWelcome();
+};
+
+window.deleteWelcome = function() {
+  showConfirm(
+    'Удалить приветствие?',
+    'Фото и имя будут удалены.',
+    'Да, удалить',
+    function() {
+      welcomeData = { photo: null, name: '' };
+      try { localStorage.removeItem('nail_welcome'); } catch(e) {}
+      document.getElementById('welcomeNameInput').value = '';
+      document.getElementById('welcomeCropImg').hidden = true;
+      document.getElementById('welcomeCropEmpty').style.display = '';
+      welcomeEdit.img = null;
+      welcomeEdit.loaded = false;
+      closeWelcomeSheet();
+      renderWelcome();
+    },
+    true
+  );
+};
+/* ============================================= */
+
 let navStack = [];
 let selfPops = 0;
 
@@ -1365,8 +1747,6 @@ function popNavSelf() {
 }
 
 function pushSheetHistory() {
-  /* Шторки открываются «пачкой»: пока открыта хоть одна, в истории
-     держится ровно одна запись уровня sheet. */
   if (navStack[navStack.length - 1] === 'sheet') return;
   pushNav('sheet');
 }
@@ -1375,7 +1755,6 @@ function popSheetHistory() {
   if (navStack[navStack.length - 1] !== 'sheet') return;
   popNavSelf();
 }
-/* =========================================== */
 
 try {
   records = JSON.parse(localStorage.getItem('nail_records')) || [];
@@ -1447,7 +1826,6 @@ window.pickStatus = function(val) {
   closeStatusSheet();
 };
 
-/* ========== ВЫБОР УСЛУГИ ИЗ ПРАЙСА ========== */
 function updateServiceFieldLabel() {
   const val = (el('fService').value || '').trim();
   const lbl = el('fServiceLabel');
@@ -1457,7 +1835,6 @@ function updateServiceFieldLabel() {
 
 window.openServiceSheet = function() {
   const current = (el('fService').value || '').trim();
-  /* Один список всех услуг из прайса (маникюр + педикюр) по алфавиту, без цен. */
   const sorted = services.slice().sort(function(a, b) {
     return String(a.name || '').localeCompare(String(b.name || ''), 'ru');
   });
@@ -1487,15 +1864,11 @@ window.pickService = function(id) {
   const s = services.find(function(x) { return String(x.id) === String(id); });
   if (!s) return;
   el('fService').value = s.name || '';
-  /* Цена из прайса подставляется автоматически — её можно стереть и вписать свою. */
   if (Number(s.price) > 0) el('fPrice').value = Number(s.price);
   updateServiceFieldLabel();
   closeServiceSheet();
 };
-/* ============================================== */
 
-/* ========== ПОДСКАЗКИ КЛИЕНТОВ ПО ИМЕНИ ========== */
-/* Уникальные клиенты из всех записей: имя -> последний известный телефон. */
 function getKnownClients() {
   const byName = {};
   records.forEach(function(r) {
@@ -1540,15 +1913,12 @@ function updateNameSuggestions() {
 
 window.pickClientFromSuggest = function(name, phone) {
   el('fName').value = name;
-  /* Телефон подставляем автоматически — оба поля можно править вручную. */
   if (phone) el('fPhone').value = phone;
   hideNameSuggestions();
 };
 
 el('fName').addEventListener('input', updateNameSuggestions);
-/* Тап по подсказке происходит сразу после blur — даём 250 мс на click. */
 el('fName').addEventListener('blur', function() { setTimeout(hideNameSuggestions, 250); });
-/* ================================================== */
 
 function updateQuickDoneState() {
   const p = Number(el('qPrice').value) || 0;
@@ -1563,8 +1933,6 @@ function switchScreen(index, fromHistory) {
   if(index < 0 || index >= screensList.length) return;
   const prevScreen = screensList[currentScreenIndex];
   if (!fromHistory && index !== currentScreenIndex) {
-    /* Переключение вкладки — уровень навигации: свайп-назад возвращает
-       на предыдущую вкладку, а не закрывает приложение. */
     pushNav({ level: 'screen', back: prevScreen });
   }
   currentScreenIndex = index;
@@ -1809,7 +2177,6 @@ function renderHome() {
 }
 el('searchInput').addEventListener('input', renderHome);
 
-/* Крестик очистки поиска: показывается, только когда в поле есть текст */
 function syncSearchClear() {
   const btn = el('searchClear');
   if (btn) btn.hidden = !el('searchInput').value;
@@ -2224,13 +2591,13 @@ window.openChartSheet = function() {
 
 window.closeChartSheet = function() {
   el('chartSheet').classList.remove('open');
-  // если ничего больше не открыто — закрываем оверлей и снимаем запись из истории
   if (!el('quickSheet').classList.contains('open') && 
       !el('recordSheet').classList.contains('open') && 
       !el('monthSheet').classList.contains('open') &&
       !el('confirmSheet').classList.contains('open') &&
       !el('statusSheet').classList.contains('open') &&
-      !el('priceSheet').classList.contains('open')) {
+      !el('priceSheet').classList.contains('open') &&
+      !el('welcomeSheet').classList.contains('open')) {
     overlay.classList.remove('show');
     popSheetHistory();
   }
@@ -2675,8 +3042,6 @@ function renderPrice() {
 window.openCategory = function(id) { currentPriceCategory = id; renderPrice(); pushNav('category'); };
 window.closeCategory = function() {
   currentPriceCategory = null; renderPrice();
-  /* Кнопка «назад» в заголовке: снимаем уровень из истории сами,
-     событие popstate от history.back() будет поглощено через selfPops. */
   if (navStack[navStack.length - 1] === 'category') popNavSelf();
 };
 
@@ -2685,7 +3050,6 @@ const rSheet = el('recordSheet');
 const qSheet = el('quickSheet');
 const pSheet = el('priceSheet');
 
-/* Внутреннее закрытие без работы с историей */
 function doCloseAllSheetsInternal() {
   overlay.classList.remove('show');
   rSheet.classList.remove('open');
@@ -2696,6 +3060,7 @@ function doCloseAllSheetsInternal() {
   el('statusSheet').classList.remove('open');
   el('serviceSheet').classList.remove('open');
   el('chartSheet').classList.remove('open');
+  el('welcomeSheet').classList.remove('open');
   editingId = null;
   currentQuickId = null;
   editingServiceId = null;
@@ -2708,10 +3073,7 @@ window.closeAllSheets = function() {
   doCloseAllSheetsInternal();
 };
 
-/* Свайп-назад по системе / hardware back */
 window.addEventListener('popstate', function() {
-  /* history.back(), вызванный самим приложением (закрытие по кнопке),
-     уже снял уровень из navStack — просто поглощаем это событие. */
   if (selfPops > 0) { selfPops--; return; }
 
   const level = navStack.pop();
@@ -2723,11 +3085,13 @@ window.addEventListener('popstate', function() {
   } else if (level && level.level === 'screen') {
     switchScreen(screensList.indexOf(level.back), true);
   }
-  /* navStack пуст — системная история прочерпнута, приложение закроет
-     обработчик MainActivity (webView.canGoBack() вернёт false). */
 });
 
 window.handleOverlayClick = function() {
+  if (el('welcomeSheet').classList.contains('open')) {
+    closeWelcomeSheet();
+    return;
+  }
   if (el('statusSheet').classList.contains('open')) {
     el('statusSheet').classList.remove('open');
     return;
@@ -2738,13 +3102,13 @@ window.handleOverlayClick = function() {
   }
   if (el('chartSheet').classList.contains('open')) {
     el('chartSheet').classList.remove('open');
-    // Если после закрытия графика больше ничего не открыто — снимаем запись из истории
     if (!el('quickSheet').classList.contains('open') && 
         !el('recordSheet').classList.contains('open') && 
         !el('monthSheet').classList.contains('open') &&
         !el('confirmSheet').classList.contains('open') &&
         !el('statusSheet').classList.contains('open') &&
-        !el('priceSheet').classList.contains('open')) {
+        !el('priceSheet').classList.contains('open') &&
+        !el('welcomeSheet').classList.contains('open')) {
       overlay.classList.remove('show');
       popSheetHistory();
     }
@@ -2902,7 +3266,6 @@ window.openFullEditFromQuick = function() {
 el('recordForm').onsubmit = function(e) {
   e.preventDefault();
 
-  /* Услуга теперь выбирается из прайса — без выбора не сохраняем. */
   if (!el('fService').value.trim()) {
     openServiceSheet();
     return;
@@ -3003,11 +3366,6 @@ el('btnDeleteService').onclick = function() {
   }
 };
 
-/* --- Переключатель «эффект стекла панелей» ---
-   Полупрозрачный фон и размытие включаются ТОЛЬКО у верхней шапки и нижней панели
-   (карточки, шторки и остальной интерфейс остаются непрозрачными).
-   Ключ localStorage оставлен прежним, чтобы у существующих пользователей выбранное
-   значение не сбросилось; если ключа нет (новый пользователь) — стекло включено. */
 const GLASS_KEY = 'nail_tabbar_glass';
 function setGlassPanels(on) {
   document.documentElement.classList.toggle('glass-panels', on);
@@ -3029,14 +3387,30 @@ window.toggleGlassPanels = function() {
 };
 applyGlassPanels();
 
-/* --- Фон приложения (карточка «Фон приложения») ---
-   Заводской фон — картинка main/fon_1.jpg. Выбранная пользователем картинка
-   сжимается в canvas (фон показывается с размытием, поэтому большой размер не нужен)
-   и кладётся в localStorage строкой data:URL. Кнопка «Очистить» удаляет ключ —
-   возвращается заводской фон. */
+const GLASS_CARDS_KEY = 'nail_cards_glass';
+function setGlassCards(on) {
+  document.documentElement.classList.toggle('glass-cards', on);
+  const sw = el('glassCardsSwitch');
+  if (sw) {
+    sw.classList.toggle('on', on);
+    sw.setAttribute('aria-checked', on ? 'true' : 'false');
+  }
+}
+function applyGlassCards() {
+  let saved = null;
+  try { saved = localStorage.getItem(GLASS_CARDS_KEY); } catch (e) {}
+  setGlassCards(saved === null ? true : saved === '1');
+}
+window.toggleGlassCards = function() {
+  const on = !document.documentElement.classList.contains('glass-cards');
+  setGlassCards(on);
+  try { localStorage.setItem(GLASS_CARDS_KEY, on ? '1' : '0'); } catch (e) {}
+};
+applyGlassCards();
+
 const APP_BG_KEY = 'nail_app_bg';
 const APP_BG_DEFAULT = 'main/fon_1.jpg';
-const APP_BG_MAX_LEN = 2600000; /* символов: 5 МБ квоты localStorage делим с записями и прайсом */
+const APP_BG_MAX_LEN = 2600000;
 
 function applyAppBg() {
   let url = APP_BG_DEFAULT;
@@ -3049,7 +3423,6 @@ function applyAppBg() {
   if (clearBtn) clearBtn.disabled = (url === APP_BG_DEFAULT);
 }
 
-/* Уменьшает картинку до maxSide по большей стороне и отдаёт data:URL JPEG */
 function shrinkBgImage(img, maxSide, quality) {
   const w = img.naturalWidth || img.width;
   const h = img.naturalHeight || img.height;
@@ -3072,7 +3445,6 @@ function storeAppBgFile(file) {
   reader.onload = function() {
     const img = new Image();
     img.onload = function() {
-      /* Сначала хорошее качество; если в localStorage не влезает — жмём сильнее. */
       const steps = [
         { side: 1280, quality: 0.78 },
         { side: 1024, quality: 0.62 },
@@ -3118,7 +3490,6 @@ el('bgClearBtn').onclick = function() {
 
 applyAppBg();
 
-/* --- Последнее резервное копирование --- */
 const BACKUP_KEY = 'nail_last_backup';
 function pluralRecords(n) {
   const m10 = n % 10, m100 = n % 100;
@@ -3223,6 +3594,7 @@ window.clearData = function() {
 };
 
 function renderAll() {
+  renderWelcome();
   renderHome();
   renderCalendar();
   renderMoney();
