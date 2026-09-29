@@ -196,9 +196,16 @@ body.app-loading #app {
   to { opacity: 1; transform: translateY(0); }
 }
 #appHeader {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 520px;
+  z-index: 15;
   display:flex; align-items:center; gap:10px; padding: 8px 14px;
   background: var(--panel-solid); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border-bottom: var(--glass-border);
-  padding-top: calc(8px + env(safe-area-inset-top)); flex:none; z-index: 10;
+  padding-top: calc(8px + env(safe-area-inset-top));
   height: calc(52px + env(safe-area-inset-top));
   box-sizing: border-box;
 }
@@ -223,7 +230,8 @@ h1 .accent { color: var(--blue); }
 
 #main { position:relative; flex:1; overflow:hidden; background: transparent; }
 .screen {
-  position:absolute; inset:0; overflow-y:auto; overflow-x:hidden; padding: 14px 14px 90px;
+  position:absolute; inset:0; overflow-y:auto; overflow-x:hidden;
+  padding: calc(52px + env(safe-area-inset-top) + 14px) 14px 90px;
   opacity:0; visibility:hidden; transform: translateY(10px);
   transition: opacity 0.3s, transform 0.3s, visibility 0.3s;
   background: transparent;
@@ -231,6 +239,31 @@ h1 .accent { color: var(--blue); }
   overscroll-behavior: contain;
 }
 .screen.active { opacity:1; visibility:visible; transform:none; }
+
+/* ===== Экран «Записи»: верхняя часть фиксирована, карточки скроллятся ===== */
+#screen-home {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#screen-home .home-top {
+  flex: none;
+  padding: calc(52px + env(safe-area-inset-top) + 14px) 14px 0;
+}
+#screen-home #homeListTitle {
+  margin-top: 4px;
+  margin-bottom: 10px;
+}
+#screen-home .home-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 0 14px 90px;
+}
 
 html.glass-cards .screen {
   transition: none;
@@ -487,17 +520,6 @@ html.glass-panels .monthlist-close {
 }
 [data-theme="light"] .r-card { box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
 .r-card:active { transform: scale(0.985); border-color: var(--blue); }
-.r-card::before {
-  content: "";
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px;
-  background: var(--dim);
-  border-radius: 16px 0 0 16px;
-}
-.r-card.s-plan::before { background: var(--blue); }
-.r-card.s-done::before { background: var(--green); }
-.r-card.s-cancel::before { background: var(--red); }
 
 .r-head {
   display: grid;
@@ -536,14 +558,17 @@ html.glass-panels .monthlist-close {
 }
 
 .badge { 
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: 9px; 
   font-weight: 800; 
-  padding: 3px 8px; 
+  padding: 4px 8px 3px; 
   border-radius: 20px; 
   text-transform: uppercase; 
   letter-spacing: 0.4px;
   border: none;
-  line-height: 1.2;
+  line-height: 1;
   white-space: nowrap;
 }
 .b-plan { background: var(--blue-soft); color: var(--blue); }
@@ -1187,31 +1212,35 @@ setTimeout(hideSplashScreen, 5000);
 
   <main id="main">
     <section class="screen active" id="screen-home">
-      <div id="welcomeWrap"></div>
+      <div class="home-top">
+        <div id="welcomeWrap"></div>
 
-      <div class="stats">
-        <div class="stat">
-          <div class="lbl">Доход за сегодня</div>
-          <div class="val" id="statToday">0 ₽</div>
-          <div class="sub">чистый доход</div>
+        <div class="stats">
+          <div class="stat">
+            <div class="lbl">Доход за сегодня</div>
+            <div class="val" id="statToday">0 ₽</div>
+            <div class="sub">чистый доход</div>
+          </div>
+          <div class="stat">
+            <div class="lbl">Записей сегодня</div>
+            <div class="val" id="statCount">0</div>
+            <div class="sub">клиенток</div>
+          </div>
         </div>
-        <div class="stat">
-          <div class="lbl">Записей сегодня</div>
-          <div class="val" id="statCount">0</div>
-          <div class="sub">клиенток</div>
+        
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" id="searchInput" placeholder="Поиск по имени или телефону...">
+          <button type="button" class="search-clear" id="searchClear" hidden aria-label="Очистить поиск">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
         </div>
-      </div>
-      
-      <div class="search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input type="text" id="searchInput" placeholder="Поиск по имени или телефону...">
-        <button type="button" class="search-clear" id="searchClear" hidden aria-label="Очистить поиск">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-        </button>
-      </div>
 
-      <div class="scr-title" id="homeListTitle" style="margin-top:4px;">Ближайшие записи</div>
-      <div id="recordsList"></div>
+        <div class="scr-title" id="homeListTitle">Ближайшие записи</div>
+      </div>
+      <div class="home-scroll">
+        <div id="recordsList"></div>
+      </div>
     </section>
 
     <section class="screen" id="screen-calendar">
@@ -2154,6 +2183,11 @@ el('qPrice').addEventListener('input', updateQuickDoneState);
 const screensList = ['home', 'calendar', 'money', 'price', 'data'];
 let currentScreenIndex = 0;
 
+function resetHomeScroll() {
+  var hs = document.querySelector('#screen-home .home-scroll');
+  if (hs) hs.scrollTop = 0;
+}
+
 function switchScreen(index, fromHistory) {
   if(index < 0 || index >= screensList.length) return;
 
@@ -2189,6 +2223,7 @@ function switchScreen(index, fromHistory) {
     s.classList.toggle('active', s.id === 'screen-' + targetScreen); 
   });
   renderAll();
+  resetHomeScroll();
 }
 
 document.querySelectorAll('.tab-btn').forEach(function(btn, idx) {
