@@ -147,6 +147,17 @@ body::before {
   height:100dvh; max-width:520px; margin:0 auto; overflow:hidden;
   background: transparent;
   transition: opacity 0.8s ease;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+#app input,
+#app textarea,
+#app select,
+#app [contenteditable] {
+  -webkit-touch-callout: default;
+  -webkit-user-select: text;
+  user-select: text;
 }
 body.app-loading #app {
   opacity: 0;
@@ -220,13 +231,13 @@ body.app-loading #app {
 h1 { font-size: 15px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.5px; }
 h1 .accent { color: var(--blue); }
 .tag { font-size: 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
-#themeBtn {
+#settingsBtn {
   margin-left:auto; width:36px; height:36px; border-radius:50%; border:none;
   color: var(--blue); display:grid; place-items:center; cursor:pointer;
   background: var(--panel2); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: var(--glass-border);
 }
-#themeBtn:active { transform: scale(0.9); }
-#themeBtn svg { width: 18px; height: 18px; }
+#settingsBtn:active { transform: scale(0.9); }
+#settingsBtn svg { width: 18px; height: 18px; }
 
 #main { position:relative; flex:1; overflow:hidden; background: transparent; }
 .screen {
@@ -367,6 +378,86 @@ html.glass-panels .monthlist-close {
   letter-spacing: 0.3px;
 }
 .home-section-title:first-child { margin-top: 0; }
+
+/* ===== Заметки ===== */
+#notesList {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.note-card {
+  position: relative;
+  border-radius: 12px;
+  padding: 10px;
+  background: var(--panel);
+  border: var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.note-card:active { transform: scale(0.97); border-color: var(--blue); }
+.note-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding-bottom: 5px;
+  border-bottom: 1px dashed var(--line);
+  margin-bottom: 6px;
+}
+.note-card-preview {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+  overflow: hidden;
+  word-break: break-word;
+  flex: 1;
+  min-height: 0;
+}
+.note-empty {
+  grid-column: 1 / -1;
+  color: var(--dim);
+  text-align: center;
+  padding: 40px 20px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.note-textarea {
+  font: 500 14px/24px system-ui, -apple-system, Roboto, sans-serif;
+  color: var(--ink);
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 10px;
+  padding: 24px 12px 12px;
+  background-color: var(--panel2);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 23px,
+    var(--line) 23px,
+    var(--line) 24px
+  );
+  background-attachment: local;
+  border: var(--glass-border);
+  min-height: 240px;
+  resize: vertical;
+  line-height: 24px;
+}
+.note-textarea:focus { border-color: var(--blue); }
 
 .welcome-card {
   position: relative;
@@ -517,6 +608,19 @@ html.glass-panels .monthlist-close {
   overflow: hidden;
   transition: transform 0.15s ease, border-color 0.15s ease;
   box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.r-card * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.r-card .r-phone a {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 [data-theme="light"] .r-card { box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
 .r-card:active { transform: scale(0.985); border-color: var(--blue); }
@@ -648,7 +752,7 @@ html.glass-panels .monthlist-close {
 .dayoff-card {
   position: relative;
   border-radius: 14px;
-  padding: 14px 16px 18px;
+  padding: 16px;
   margin-bottom: 10px;
   background: var(--panel);
   backdrop-filter: var(--glass-blur);
@@ -657,10 +761,14 @@ html.glass-panels .monthlist-close {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   text-align: center;
   overflow: hidden;
   box-shadow: var(--glass-shadow);
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 .dayoff-card::after {
   content: "";
@@ -679,8 +787,8 @@ html.glass-panels .monthlist-close {
   z-index: 1;
 }
 .dayoff-title {
-  font: 800 28px/1 "Nunito", sans-serif;
-  letter-spacing: 4px;
+  font: 800 18px/1 "Nunito", sans-serif;
+  letter-spacing: 3px;
   text-align: center;
   width: 100%;
   background: linear-gradient(90deg, #FFA726 0%, #FF6F00 25%, #FFB74D 50%, #FF6F00 75%, #FFA726 100%);
@@ -691,7 +799,6 @@ html.glass-panels .monthlist-close {
   color: transparent;
   position: relative;
   z-index: 1;
-  margin-top: 4px;
 }
 [data-theme="light"] .dayoff-title {
   background: linear-gradient(90deg, #F57C00 0%, #E65100 25%, #FFB74D 50%, #E65100 75%, #F57C00 100%);
@@ -893,14 +1000,16 @@ html.glass-cards .price-card,
 html.glass-cards .dayoff-card,
 html.glass-cards .r-card,
 html.glass-cards .welcome-card,
+html.glass-cards .note-card,
 html.glass-cards .sheet,
 html.glass-cards #statusSheet,
 html.glass-cards #serviceSheet,
 html.glass-cards #categorySheet,
 html.glass-cards .search input,
-html.glass-cards #themeBtn,
+html.glass-cards #settingsBtn,
 html.glass-cards #priceBtnBack,
-html.glass-cards #priceBtnAdd {
+html.glass-cards #priceBtnAdd,
+html.glass-cards #notesAddBtn {
   background: var(--glass-card-bg);
   -webkit-backdrop-filter: var(--glass-card-blur);
   backdrop-filter: var(--glass-card-blur);
@@ -957,6 +1066,7 @@ html.glass-cards #priceBtnAdd {
 
 #statusSheet { z-index: 55; }
 #serviceSheet { z-index: 55; }
+#noteSheet { z-index: 55; }
 #fServiceLabel.is-empty { color: var(--dim); font-weight: 400; }
 
 .suggest-box {
@@ -1205,8 +1315,8 @@ setTimeout(hideSplashScreen, 5000);
       <h1>МАСТЕР <span class="accent">МАНИКЮРА</span></h1>
       <div class="tag">Дневник дохода</div>
     </div>
-    <button id="themeBtn">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+    <button id="settingsBtn" type="button" onclick="openSettings()" aria-label="Настройки">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     </button>
   </header>
 
@@ -1312,7 +1422,7 @@ setTimeout(hideSplashScreen, 5000);
     </section>
 
     <section class="screen" id="screen-price">
-      <div style="position:relative; display:flex; align-items:center; justify-content:center; margin-bottom:14px; min-height:36px;">
+      <div style="position:relative; display:flex; align-items:center; justify-content:center; margin-bottom:12px; min-height:32px;">
         <button class="icon-btn" id="priceBtnBack" onclick="closeCategory()" style="position:absolute; left:0; display:none; color:var(--ink);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg></button>
         <div class="scr-title" id="priceScreenTitle" style="margin:0;">Мой Прайс</div>
         <button class="icon-btn" id="priceBtnAdd" onclick="openPriceSheet()" style="position:absolute; right:0; display:none; color:var(--blue)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -1320,9 +1430,25 @@ setTimeout(hideSplashScreen, 5000);
       <div id="priceList"></div>
     </section>
 
+    <section class="screen" id="screen-notes">
+      <div style="position:relative; display:flex; align-items:center; justify-content:center; margin-bottom:12px; min-height:32px;">
+        <div class="scr-title" style="margin:0; color: var(--ink);">Мои заметки</div>
+        <button type="button" class="icon-btn" id="notesAddBtn" onclick="openNoteSheet()" aria-label="Создать заметку" style="position:absolute; right:0; color:var(--blue);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
+      <div id="notesList"></div>
+    </section>
+
     <section class="screen" id="screen-data">
-      <div class="scr-title">Оформление</div>
+      <div class="settings-section-title" style="margin-top: 0;">Оформление</div>
       <div class="cal-card">
+        <div class="opt-row">
+          <div class="opt-title" id="themeLabel">Тёмная тема</div>
+          <button type="button" class="switch" id="themeSwitch" role="switch" aria-checked="true" aria-label="Переключение темы" onclick="toggleThemeSwitch()"></button>
+        </div>
+      </div>
+      <div class="cal-card" style="margin-top:10px;">
         <div class="opt-row">
           <div class="opt-title">Эффект стекла панелей</div>
           <button type="button" class="switch" id="glassSwitch" role="switch" aria-checked="true" aria-label="Эффект стекла верхней и нижней панели" onclick="toggleGlassPanels()"></button>
@@ -1406,9 +1532,14 @@ setTimeout(hideSplashScreen, 5000);
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
       <span>Прайс</span>
     </button>
-    <button class="tab-btn" data-screen="data">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      <span>Настройки</span>
+    <button class="tab-btn" data-screen="notes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <line x1="7" y1="8" x2="17" y2="8"/>
+        <line x1="7" y1="12" x2="17" y2="12"/>
+        <line x1="7" y1="16" x2="13" y2="16"/>
+      </svg>
+      <span>Заметки</span>
     </button>
   </nav>
 
@@ -1435,6 +1566,23 @@ setTimeout(hideSplashScreen, 5000);
 
     <button type="button" class="btn" style="margin-top:12px;" onclick="saveWelcome()">Готово</button>
     <button type="button" class="btn btn-outline" id="welcomeDeleteBtn" style="margin-top:8px; display:none; color:var(--red); border-color:var(--red-soft);" onclick="deleteWelcome()">Удалить</button>
+  </div>
+
+  <div class="sheet" id="noteSheet">
+    <div class="sheet-head">
+      <h2 id="noteSheetTitle">Новая заметка</h2>
+      <button class="icon-btn" type="button" onclick="closeNoteSheet()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="field">
+      <label>Заголовок</label>
+      <input type="text" id="noteTitleInput" placeholder="Например: Идеи для салона" maxlength="60">
+    </div>
+    <div class="field">
+      <label>Текст заметки</label>
+      <textarea id="noteBodyInput" class="note-textarea" placeholder="Пишите здесь всё, что угодно..."></textarea>
+    </div>
+    <button type="button" class="btn" style="margin-top:8px;" onclick="saveNote()">Сохранить</button>
+    <button type="button" class="btn btn-outline" id="noteDeleteBtn" style="margin-top:8px; display:none; color:var(--red); border-color:var(--red-soft);" onclick="deleteNote()">Удалить</button>
   </div>
 
   <div class="sheet" id="quickSheet">
@@ -1629,6 +1777,14 @@ let compareMonthY = new Date().getFullYear();
 let compareMonthM = new Date().getMonth();
 const MAX_MONTHS_BACK = 24;
 
+/* ====== ЗАМЕТКИ ====== */
+let notes = [];
+try {
+  notes = JSON.parse(localStorage.getItem('nail_notes')) || [];
+  if (!Array.isArray(notes)) notes = [];
+} catch(e) { notes = []; }
+let editingNoteId = null;
+
 /* ====== Вибрация (только Android) ====== */
 const VIBRATION_KEY = 'nail_vibration';
 let vibrationEnabled = true;
@@ -1666,6 +1822,27 @@ function hideVibrationCardOnIOS() {
   const card = document.getElementById('vibrationCard');
   if (card) card.style.display = 'none';
 }
+
+/* ====== ТЕМА (тумблер) ====== */
+function applyThemeSwitch() {
+  const sw = el('themeSwitch');
+  const lbl = el('themeLabel');
+  const isDark = document.documentElement.dataset.theme === 'dark';
+  if (sw) {
+    sw.classList.toggle('on', isDark);
+    sw.setAttribute('aria-checked', isDark ? 'true' : 'false');
+  }
+  if (lbl) lbl.textContent = isDark ? 'Тёмная тема' : 'Светлая тема';
+}
+window.toggleThemeSwitch = function() {
+  const root = document.documentElement;
+  const newTheme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+  root.dataset.theme = newTheme;
+  try { localStorage.setItem('nail_theme', newTheme); } catch(e) {}
+  const meta = document.getElementById('metaTheme');
+  if (meta) meta.setAttribute('content', newTheme === 'dark' ? '#18161a' : '#fdfafb');
+  applyThemeSwitch();
+};
 
 /* ====== WELCOME ====== */
 let welcomeData = { photo: null, name: '' };
@@ -1800,7 +1977,8 @@ window.closeWelcomeSheet = function() {
       !el('priceSheet').classList.contains('open') &&
       !el('categorySheet').classList.contains('open') &&
       !el('chartSheet').classList.contains('open') &&
-      !el('serviceSheet').classList.contains('open')) {
+      !el('serviceSheet').classList.contains('open') &&
+      !el('noteSheet').classList.contains('open')) {
     overlay.classList.remove('show');
     popSheetHistory();
   }
@@ -2180,8 +2358,136 @@ function updateQuickDoneState() {
 }
 el('qPrice').addEventListener('input', updateQuickDoneState);
 
-const screensList = ['home', 'calendar', 'money', 'price', 'data'];
+/* ====== Заметки: рендер и операции ====== */
+function renderNotes() {
+  const list = el('notesList');
+  if (!list) return;
+  if (!notes.length) {
+    list.innerHTML = '<div class="note-empty">Пока нет заметок.<br>Нажмите «+», чтобы создать первую.</div>';
+    return;
+  }
+  let html = '';
+  notes.forEach(function(n) {
+    const title = escapeHtml(n.title || 'Без названия');
+    const rawBody = String(n.body || '').replace(/\s+/g, ' ').trim();
+    let preview;
+    if (!rawBody) {
+      preview = 'Нет текста';
+    } else if (rawBody.length > 60) {
+      preview = escapeHtml(rawBody.slice(0, 60).trim()) + '…';
+    } else {
+      preview = escapeHtml(rawBody);
+    }
+    html += '<div class="note-card" onclick="openNoteSheet(\'' + n.id + '\')">' +
+              '<div class="note-card-title">' + title + '</div>' +
+              '<div class="note-card-preview">' + preview + '</div>' +
+            '</div>';
+  });
+  list.innerHTML = html;
+}
+
+window.openNoteSheet = function(id) {
+  editingNoteId = id || null;
+  const sheetTitle = el('noteSheetTitle');
+  const titleInput = el('noteTitleInput');
+  const bodyInput = el('noteBodyInput');
+  const delBtn = el('noteDeleteBtn');
+
+  if (editingNoteId) {
+    const n = notes.find(function(x) { return x.id === editingNoteId; });
+    if (!n) { editingNoteId = null; return; }
+    titleInput.value = n.title || '';
+    bodyInput.value = n.body || '';
+    sheetTitle.textContent = 'Заметка';
+    delBtn.style.display = 'block';
+  } else {
+    titleInput.value = '';
+    bodyInput.value = '';
+    sheetTitle.textContent = 'Новая заметка';
+    delBtn.style.display = 'none';
+  }
+
+  overlay.classList.add('show');
+  el('noteSheet').classList.add('open');
+  pushSheetHistory();
+};
+
+window.closeNoteSheet = function() {
+  el('noteSheet').classList.remove('open');
+  editingNoteId = null;
+  if (!document.querySelector('.sheet.open')) {
+    overlay.classList.remove('show');
+    popSheetHistory();
+  }
+};
+
+window.saveNote = function() {
+  const title = el('noteTitleInput').value.trim();
+  const body = el('noteBodyInput').value;
+
+  if (!title && !body.trim()) {
+    alert('Введите заголовок или текст заметки.');
+    return;
+  }
+
+  if (editingNoteId) {
+    const idx = notes.findIndex(function(x) { return x.id === editingNoteId; });
+    if (idx > -1) {
+      notes[idx].title = title || 'Без названия';
+      notes[idx].body = body;
+    }
+  } else {
+    notes.unshift({
+      id: uid(),
+      title: title || 'Без названия',
+      body: body,
+      createdAt: Date.now()
+    });
+  }
+
+  try { localStorage.setItem('nail_notes', JSON.stringify(notes)); } catch(e) {}
+
+  closeAllSheets();
+  renderNotes();
+  switchScreen(screensList.indexOf('notes'));
+};
+
+window.deleteNote = function() {
+  if (!editingNoteId) return;
+  const id = editingNoteId;
+  showConfirm(
+    'Удалить заметку?',
+    'Заметка будет удалена безвозвратно.',
+    'Да, удалить',
+    function() {
+      notes = notes.filter(function(n) { return n.id !== id; });
+      try { localStorage.setItem('nail_notes', JSON.stringify(notes)); } catch(e) {}
+      renderNotes();
+    },
+    true
+  );
+};
+
+/* ====== Настройки: открытие через шапку ====== */
+window.openSettings = function() {
+  const idx = screensList.indexOf('data');
+  if (idx > -1) switchScreen(idx);
+};
+
+const screensList = ['home', 'calendar', 'money', 'price', 'notes', 'data'];
 let currentScreenIndex = 0;
+
+// Экраны, между которыми разрешены свайпы (только таб-барные)
+const SWIPEABLE_SCREENS = ['home', 'calendar', 'money', 'price', 'notes'];
+
+function findSwipeTarget(curIdx, dir) {
+  let i = curIdx + dir;
+  while (i >= 0 && i < screensList.length) {
+    if (SWIPEABLE_SCREENS.indexOf(screensList[i]) !== -1) return i;
+    i += dir;
+  }
+  return -1;
+}
 
 function resetHomeScroll() {
   var hs = document.querySelector('#screen-home .home-scroll');
@@ -2229,7 +2535,9 @@ function switchScreen(index, fromHistory) {
 document.querySelectorAll('.tab-btn').forEach(function(btn, idx) {
   btn.addEventListener('click', function() {
     haptic(35);
-    switchScreen(idx);
+    const scr = btn.dataset.screen;
+    const i = screensList.indexOf(scr);
+    if (i > -1) switchScreen(i);
   });
 });
 
@@ -2264,14 +2572,16 @@ applySwipe(el('main'),
       closeMonthListPage();
       return;
     }
-    switchScreen(currentScreenIndex + 1);
+    var t = findSwipeTarget(currentScreenIndex, 1);
+    if (t !== -1) switchScreen(t);
   }, 
   function() {
     if (el('screen-monthlist').classList.contains('active')) {
       closeMonthListPage();
       return;
     }
-    switchScreen(currentScreenIndex - 1);
+    var t = findSwipeTarget(currentScreenIndex, -1);
+    if (t !== -1) switchScreen(t);
   }
 );
 
@@ -2286,14 +2596,6 @@ applySwipe(el('monthCompare'),
   function() { changeCompareMonth(-1); },
   { stop: true }
 );
-
-el('themeBtn').onclick = function() {
-  const root = document.documentElement;
-  const newTheme = root.dataset.theme === 'dark' ? 'light' : 'dark';
-  root.dataset.theme = newTheme;
-  localStorage.setItem('nail_theme', newTheme);
-  document.getElementById('metaTheme').setAttribute('content', newTheme === 'dark' ? '#18161a' : '#fdfafb');
-};
 
 const formatMoney = function(n) { 
   return new Intl.NumberFormat('ru-RU').format(n || 0) + ' ₽'; 
@@ -2344,7 +2646,6 @@ const toLocalISO = function(d) {
 
 function renderDayOffCard(dateStr) {
   return '<div class="dayoff-card">' +
-           '<div class="dayoff-date">' + formatDateNominative(dateStr) + '</div>' +
            '<div class="dayoff-title">ВЫХОДНОЙ</div>' +
          '</div>';
 }
@@ -2448,8 +2749,8 @@ function renderHome() {
     listHTML += todayRecords.map(renderCard).join('');
   }
   
+  listHTML += '<div class="home-section-title">' + formatHomeSectionTitle(tomorrow, today, tomorrow) + '</div>';
   if (tomorrowRecords.length) {
-    listHTML += '<div class="home-section-title">' + formatHomeSectionTitle(tomorrow, today, tomorrow) + '</div>';
     listHTML += tomorrowRecords.map(renderCard).join('');
   } else {
     listHTML += renderDayOffCard(tomorrow);
@@ -2889,7 +3190,8 @@ window.closeChartSheet = function() {
       !el('statusSheet').classList.contains('open') &&
       !el('priceSheet').classList.contains('open') &&
       !el('categorySheet').classList.contains('open') &&
-      !el('welcomeSheet').classList.contains('open')) {
+      !el('welcomeSheet').classList.contains('open') &&
+      !el('noteSheet').classList.contains('open')) {
     overlay.classList.remove('show');
     popSheetHistory();
   }
@@ -3595,10 +3897,12 @@ function doCloseAllSheetsInternal() {
   el('chartSheet').classList.remove('open');
   el('categorySheet').classList.remove('open');
   el('welcomeSheet').classList.remove('open');
+  el('noteSheet').classList.remove('open');
   editingId = null;
   currentQuickId = null;
   editingServiceId = null;
   editingCategoryId = null;
+  editingNoteId = null;
   confirmCallback = null;
   confirmKeepParent = false;
 }
@@ -3633,6 +3937,10 @@ window.handleOverlayClick = function() {
     closeWelcomeSheet();
     return;
   }
+  if (el('noteSheet').classList.contains('open')) {
+    closeNoteSheet();
+    return;
+  }
   if (el('statusSheet').classList.contains('open')) {
     el('statusSheet').classList.remove('open');
     return;
@@ -3650,7 +3958,8 @@ window.handleOverlayClick = function() {
         !el('statusSheet').classList.contains('open') &&
         !el('priceSheet').classList.contains('open') &&
         !el('categorySheet').classList.contains('open') &&
-        !el('welcomeSheet').classList.contains('open')) {
+        !el('welcomeSheet').classList.contains('open') &&
+        !el('noteSheet').classList.contains('open')) {
       overlay.classList.remove('show');
       popSheetHistory();
     }
@@ -4060,7 +4369,7 @@ function markBackupSaved() {
 
 window.exportData = function() {
   try {
-    const data = { records: records, services: services, priceCategories: priceCategories, exportedAt: new Date().toISOString() };
+    const data = { records: records, services: services, priceCategories: priceCategories, notes: notes, exportedAt: new Date().toISOString() };
     const json = JSON.stringify(data, null, 2);
     const blob = new Blob([json], {type: "application/json;charset=utf-8"});
     const url = URL.createObjectURL(blob);
@@ -4092,6 +4401,10 @@ el('importFile').onchange = function(e) {
       if(Array.isArray(data.priceCategories) && data.priceCategories.length > 0) {
         priceCategories = data.priceCategories;
       }
+      if(Array.isArray(data.notes)) {
+        notes = data.notes;
+        localStorage.setItem('nail_notes', JSON.stringify(notes));
+      }
       
       localStorage.setItem('nail_records', JSON.stringify(records));
       localStorage.setItem('nail_services', JSON.stringify(services));
@@ -4109,15 +4422,17 @@ el('importFile').onchange = function(e) {
 window.clearData = function() {
   showConfirm(
     'Очистить все данные?',
-    'Все записи и прайс-лист будут удалены безвозвратно. Это действие нельзя отменить!',
+    'Все записи, прайс-лист и заметки будут удалены безвозвратно. Это действие нельзя отменить!',
     'Да, удалить',
     function() {
       records = [];
       services = [];
       priceCategories = DEFAULT_PRICE_CATEGORIES.slice();
+      notes = [];
       localStorage.removeItem('nail_records');
       localStorage.removeItem('nail_services');
       localStorage.removeItem('nail_price_categories');
+      localStorage.removeItem('nail_notes');
       try { localStorage.removeItem(BACKUP_KEY); } catch (e) {}
       currentPriceCategory = null;
       renderAll();
@@ -4131,7 +4446,9 @@ function renderAll() {
   renderCalendar();
   renderMoney();
   renderPrice();
+  renderNotes();
   renderBackupInfo();
+  applyThemeSwitch();
 }
 
 setFormStatus('plan');
