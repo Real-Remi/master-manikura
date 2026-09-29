@@ -233,11 +233,12 @@ h1 .accent { color: var(--blue); }
 .tag { font-size: 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
 #settingsBtn {
   margin-left:auto; width:36px; height:36px; border-radius:50%; border:none;
-  color: var(--blue); display:grid; place-items:center; cursor:pointer;
-  background: var(--panel2); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: var(--glass-border);
+  color: var(--muted); display:grid; place-items:center; cursor:pointer;
+  background: transparent;
+  transition: transform 0.15s ease, color 0.15s ease;
 }
-#settingsBtn:active { transform: scale(0.9); }
-#settingsBtn svg { width: 18px; height: 18px; }
+#settingsBtn:active { transform: scale(0.85); color: var(--ink); }
+#settingsBtn svg { width: 20px; height: 20px; }
 
 #main { position:relative; flex:1; overflow:hidden; background: transparent; }
 .screen {
@@ -259,6 +260,8 @@ h1 .accent { color: var(--blue); }
   overflow: hidden;
 }
 #screen-home .home-top {
+  position: relative;
+  z-index: 2;
   flex: none;
   padding: calc(52px + env(safe-area-inset-top) + 14px) 14px 0;
 }
@@ -1027,7 +1030,6 @@ html.glass-cards #statusSheet,
 html.glass-cards #serviceSheet,
 html.glass-cards #categorySheet,
 html.glass-cards .search input,
-html.glass-cards #settingsBtn,
 html.glass-cards #priceBtnBack,
 html.glass-cards #priceBtnAdd,
 html.glass-cards #notesAddBtn {
@@ -2595,6 +2597,13 @@ function switchScreen(index, fromHistory) {
     compareMonthM = now.getMonth();
   }
 
+  // Календарь: при каждом входе показываем текущий месяц
+  if (targetScreen === 'calendar') {
+    const now = new Date();
+    currentMonth = now.getMonth();
+    currentYear = now.getFullYear();
+  }
+
   var searchEl = el('searchInput');
   if (searchEl && searchEl.value) {
     searchEl.value = '';
@@ -2609,6 +2618,12 @@ function switchScreen(index, fromHistory) {
   });
   renderAll();
   resetHomeScroll();
+
+  // Доходы: при каждом входе скроллим наверх
+  if (targetScreen === 'money') {
+    var moneyEl = el('screen-money');
+    if (moneyEl) moneyEl.scrollTop = 0;
+  }
 }
 
 document.querySelectorAll('.tab-btn').forEach(function(btn, idx) {
