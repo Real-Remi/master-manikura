@@ -369,6 +369,25 @@ html.glass-panels .monthlist-close {
   justify-content: center; text-align: center;
   margin-bottom: 12px;
 }
+/* Обёртка для заголовка с абсолютной кнопкой справа — точная высота как у .scr-title */
+.title-row {
+  position: relative;
+  margin-bottom: 12px;
+}
+.title-row > .scr-title { margin: 0; }
+.title-row > .title-action {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.title-row > .title-action-left {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
 .home-section-title {
   font-size: 14px;
   font-weight: 700;
@@ -892,6 +911,9 @@ html.glass-panels .monthlist-close {
 
 #monthCompare { position: relative; overflow: hidden; border-radius: 16px; }
 #monthCompare .cal-card { position: relative; z-index: 1; }
+#monthCompareContent {
+  overflow: hidden;
+}
 
 .price-card {
   position: relative;
@@ -908,7 +930,6 @@ html.glass-panels .monthlist-close {
   content: '›'; position: absolute; top: 6px; right: 10px;
   color: var(--dim); font-size: 18px; line-height: 1; font-weight: 300; pointer-events: none;
 }
-/* Активная карточка при drag — «поднята над списком» */
 .price-card.dragging {
   transition: none;
   z-index: 100;
@@ -1067,6 +1088,7 @@ html.glass-cards #notesAddBtn {
 #statusSheet { z-index: 55; }
 #serviceSheet { z-index: 55; }
 #noteSheet { z-index: 55; }
+#alertSheet { z-index: 65; }
 #fServiceLabel.is-empty { color: var(--dim); font-weight: 400; }
 
 .suggest-box {
@@ -1410,7 +1432,13 @@ setTimeout(hideSplashScreen, 5000);
         </div>
       </div>
 
-      <div id="monthCompare" style="margin-bottom:12px;"></div>
+      <div id="monthCompare" style="margin-bottom:12px;">
+        <div class="cal-card" style="padding:14px; position:relative; overflow:hidden;">
+          <div class="month-nav left" id="monthCompareLeft">‹</div>
+          <div class="month-nav right" id="monthCompareRight">›</div>
+          <div id="monthCompareContent"></div>
+        </div>
+      </div>
       <div class="stats" id="avgStats" style="margin-bottom:12px;"></div>
       <div id="dailyChartWrap" style="margin-bottom:12px;"></div>
       <div id="servicesPieWrap" style="margin-bottom:12px;"></div>
@@ -1422,18 +1450,18 @@ setTimeout(hideSplashScreen, 5000);
     </section>
 
     <section class="screen" id="screen-price">
-      <div style="position:relative; display:flex; align-items:center; justify-content:center; margin-bottom:12px; min-height:32px;">
-        <button class="icon-btn" id="priceBtnBack" onclick="closeCategory()" style="position:absolute; left:0; display:none; color:var(--ink);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg></button>
-        <div class="scr-title" id="priceScreenTitle" style="margin:0;">Мой Прайс</div>
-        <button class="icon-btn" id="priceBtnAdd" onclick="openPriceSheet()" style="position:absolute; right:0; display:none; color:var(--blue)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+      <div class="title-row">
+        <button class="icon-btn title-action-left" id="priceBtnBack" onclick="closeCategory()" style="display:none; color:var(--ink);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg></button>
+        <div class="scr-title" id="priceScreenTitle">Мой Прайс</div>
+        <button class="icon-btn title-action" id="priceBtnAdd" onclick="openPriceSheet()" style="display:none; color:var(--blue)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
       </div>
       <div id="priceList"></div>
     </section>
 
     <section class="screen" id="screen-notes">
-      <div style="position:relative; display:flex; align-items:center; justify-content:center; margin-bottom:12px; min-height:32px;">
-        <div class="scr-title" style="margin:0; color: var(--ink);">Мои заметки</div>
-        <button type="button" class="icon-btn" id="notesAddBtn" onclick="openNoteSheet()" aria-label="Создать заметку" style="position:absolute; right:0; color:var(--blue);">
+      <div class="title-row">
+        <div class="scr-title" style="color: var(--ink);">Мои заметки</div>
+        <button type="button" class="icon-btn title-action" id="notesAddBtn" onclick="openNoteSheet()" aria-label="Создать заметку" style="color:var(--blue);">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
         </button>
       </div>
@@ -1743,6 +1771,15 @@ setTimeout(hideSplashScreen, 5000);
     </div>
   </div>
 
+  <div class="sheet" id="alertSheet">
+    <div class="sheet-head" style="margin-bottom: 12px;">
+      <h2 id="alertTitle">Внимание</h2>
+      <button class="icon-btn" type="button" onclick="closeAlertSheet()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div id="alertText" style="font-size:14px; color:var(--muted); margin-bottom:20px; line-height:1.6;"></div>
+    <button type="button" class="btn" id="alertOk">Понятно</button>
+  </div>
+
 </div>
 
 <script>
@@ -1843,6 +1880,47 @@ window.toggleThemeSwitch = function() {
   if (meta) meta.setAttribute('content', newTheme === 'dark' ? '#18161a' : '#fdfafb');
   applyThemeSwitch();
 };
+
+/* ====== Цвета категорий (для графика «По услугам») ====== */
+const CATEGORY_COLORS = {
+  manicure: '#FFA726',
+  pedicure: '#60A5FA',
+  other: '#A78BFA'
+};
+const KNOWN_CATEGORY_COLORS = {
+  'маникюр': '#FFA726',
+  'педикюр': '#60A5FA',
+  'другое': '#A78BFA'
+};
+const EXTRA_PALETTE = ['#4ADE80', '#FACC15', '#22D3EE', '#FB7185', '#A3E635', '#E879F9', '#FBBF24', '#38BDF8', '#F472B6', '#34D399'];
+
+function getCategoryColor(cat) {
+  if (!cat) return '#A78BFA';
+  if (CATEGORY_COLORS[cat.id]) return CATEGORY_COLORS[cat.id];
+  const nm = String(cat.name || '').trim().toLowerCase();
+  if (KNOWN_CATEGORY_COLORS[nm]) return KNOWN_CATEGORY_COLORS[nm];
+  const idx = priceCategories.findIndex(function(c) { return c.id === cat.id; });
+  return EXTRA_PALETTE[(idx >= 0 ? idx : 0) % EXTRA_PALETTE.length];
+}
+
+/* Ищем категорию услуги по её названию в записи */
+function findCategoryForService(serviceName) {
+  const sName = String(serviceName || '').trim().toLowerCase();
+  if (!sName) return null;
+  for (let i = 0; i < services.length; i++) {
+    const s = services[i];
+    const sn = String(s.name || '').trim().toLowerCase();
+    if (sn && sn === sName && s.catId) return s.catId;
+  }
+  for (let i = 0; i < services.length; i++) {
+    const s = services[i];
+    const sn = String(s.name || '').trim().toLowerCase();
+    if (sn && sName.indexOf(sn) !== -1 && s.catId) return s.catId;
+  }
+  if (sName.indexOf('педикюр') !== -1) return 'pedicure';
+  if (sName.indexOf('маникюр') !== -1) return 'manicure';
+  return null;
+}
 
 /* ====== WELCOME ====== */
 let welcomeData = { photo: null, name: '' };
@@ -1978,7 +2056,8 @@ window.closeWelcomeSheet = function() {
       !el('categorySheet').classList.contains('open') &&
       !el('chartSheet').classList.contains('open') &&
       !el('serviceSheet').classList.contains('open') &&
-      !el('noteSheet').classList.contains('open')) {
+      !el('noteSheet').classList.contains('open') &&
+      !el('alertSheet').classList.contains('open')) {
     overlay.classList.remove('show');
     popSheetHistory();
   }
@@ -2669,7 +2748,7 @@ function renderCard(r) {
   let dayName = isNaN(dateObj) ? '' : days[dateObj.getDay()] + '. ';
   
   let bottomHtml = '';
-  if (price > 0) {
+  if (r.status === 'done' && price > 0) {
     if (expenses > 0) {
       bottomHtml = '<div class="r-bottom-multi">' +
                      '<div class="row"><span>Доход:</span><b class="price">' + formatPos(price) + '</b></div>' +
@@ -3041,37 +3120,35 @@ function renderMonthCompare(slideDir) {
   const canNext = findMonthWithData(y, m, 1) !== null;
   const showHint = canPrev || canNext;
   
-  const leftArrowCls = 'month-nav left ' + (canPrev ? 'enabled' : 'disabled');
-  const rightArrowCls = 'month-nav right ' + (canNext ? 'enabled' : 'disabled');
-  const leftClick = canPrev ? ' onclick="changeCompareMonth(-1)"' : '';
-  const rightClick = canNext ? ' onclick="changeCompareMonth(1)"' : '';
+  // Обновляем стрелки
+  const leftEl = el('monthCompareLeft');
+  const rightEl = el('monthCompareRight');
+  leftEl.className = 'month-nav left ' + (canPrev ? 'enabled' : 'disabled');
+  rightEl.className = 'month-nav right ' + (canNext ? 'enabled' : 'disabled');
+  leftEl.onclick = canPrev ? function() { changeCompareMonth(-1); } : null;
+  rightEl.onclick = canNext ? function() { changeCompareMonth(1); } : null;
   
+  // Обновляем только содержимое
+  const content = el('monthCompareContent');
   const hintHtml = showHint
     ? '<div style="border-top: 1px dashed var(--line); margin-top: 12px; padding-top: 10px; text-align:center; color:var(--dim); font-size:10px; letter-spacing:0.3px;">← свайпайте, чтобы сменить месяц →</div>'
     : '';
   
-  el('monthCompare').innerHTML = 
-    '<div class="cal-card" style="padding:14px; position:relative; overflow:hidden;">' +
-      '<div class="' + leftArrowCls + '"' + leftClick + '>‹</div>' +
-      '<div class="' + rightArrowCls + '"' + rightClick + '>›</div>' +
-      '<div style="padding: 0 24px;">' +
-        '<div style="color:var(--ink); font-size:11px; text-transform:uppercase; letter-spacing:0.5px; font-weight:700; margin-bottom:5px;">' + curMonthName + '</div>' +
-        '<div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">' +
-          '<div style="font: 800 22px \'Nunito\', sans-serif; color:var(--green); line-height:1.2; min-width:0;">' + formatPos(curInc) + '</div>' +
-          '<div style="flex-shrink:0;">' + rightSideHtml + '</div>' +
-        '</div>' +
-        (bottomLabel ? '<div style="color:var(--muted); font-size:11px; margin-top:10px;">' + bottomLabel + '</div>' : '') +
+  content.innerHTML =
+    '<div style="padding: 0 24px;">' +
+      '<div style="color:var(--ink); font-size:11px; text-transform:uppercase; letter-spacing:0.5px; font-weight:700; margin-bottom:5px;">' + curMonthName + '</div>' +
+      '<div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">' +
+        '<div style="font: 800 22px \'Nunito\', sans-serif; color:var(--green); line-height:1.2; min-width:0;">' + formatPos(curInc) + '</div>' +
+        '<div style="flex-shrink:0;">' + rightSideHtml + '</div>' +
       '</div>' +
-      hintHtml +
-    '</div>';
+      (bottomLabel ? '<div style="color:var(--muted); font-size:11px; margin-top:10px;">' + bottomLabel + '</div>' : '') +
+    '</div>' +
+    hintHtml;
 
   if (slideDir) {
-    var card = el('monthCompare').querySelector('.cal-card');
-    if (card) {
-      card.classList.remove('slide-next', 'slide-prev');
-      void card.offsetWidth;
-      card.classList.add(slideDir > 0 ? 'slide-next' : 'slide-prev');
-    }
+    content.classList.remove('slide-next', 'slide-prev');
+    void content.offsetWidth;
+    content.classList.add(slideDir > 0 ? 'slide-next' : 'slide-prev');
   }
 }
 
@@ -3191,7 +3268,8 @@ window.closeChartSheet = function() {
       !el('priceSheet').classList.contains('open') &&
       !el('categorySheet').classList.contains('open') &&
       !el('welcomeSheet').classList.contains('open') &&
-      !el('noteSheet').classList.contains('open')) {
+      !el('noteSheet').classList.contains('open') &&
+      !el('alertSheet').classList.contains('open')) {
     overlay.classList.remove('show');
     popSheetHistory();
   }
@@ -3317,18 +3395,40 @@ function renderBigChart() {
     '</div>';
 }
 
+/* ====== Пирог «По услугам» — динамический по категориям прайса ====== */
 function renderServicesPie() {
   const done = records.filter(function(r) { return r.status === 'done'; });
   
-  let manSum = 0, pedSum = 0;
+  const byCat = {};
   done.forEach(function(r) {
-    const sLow = (r.service || '').toLowerCase();
-    const price = Number(r.price) || 0;
-    if (sLow.indexOf('педикюр') !== -1) pedSum += price;
-    else manSum += price;
+    const catId = findCategoryForService(r.service);
+    const key = catId || '__unknown__';
+    if (!byCat[key]) byCat[key] = { total: 0, count: 0 };
+    byCat[key].total += Number(r.price) || 0;
+    byCat[key].count += 1;
   });
   
-  const total = manSum + pedSum;
+  const items = [];
+  priceCategories.forEach(function(cat) {
+    if (byCat[cat.id] && byCat[cat.id].total > 0) {
+      items.push({
+        id: cat.id,
+        name: cat.name,
+        total: byCat[cat.id].total,
+        color: getCategoryColor(cat)
+      });
+    }
+  });
+  if (byCat['__unknown__'] && byCat['__unknown__'].total > 0) {
+    items.push({
+      id: '__unknown__',
+      name: 'Другое',
+      total: byCat['__unknown__'].total,
+      color: '#A78BFA'
+    });
+  }
+  
+  const total = items.reduce(function(s, it) { return s + it.total; }, 0);
   
   let pieSvg = '';
   let legendHtml = '';
@@ -3337,41 +3437,37 @@ function renderServicesPie() {
     pieSvg = '<svg viewBox="0 0 100 100" style="width:90px; height:90px; flex-shrink:0;"><circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="14"/></svg>';
     legendHtml = '<div style="color:var(--dim); font-size:12px;">Пока нет выполненных работ</div>';
   } else {
-    const manPct = manSum / total;
-    const manPctRounded = Math.round(manPct * 100);
-    const pedPctRounded = 100 - manPctRounded;
+    const R = 38;
+    const C = 2 * Math.PI * R;
+    let offset = 0;
+    let circlesHtml = '';
+    items.forEach(function(it) {
+      const frac = it.total / total;
+      const len = C * frac;
+      circlesHtml +=
+        '<circle cx="50" cy="50" r="' + R + '" fill="none" stroke="' + it.color + '" stroke-width="14" ' +
+          'stroke-dasharray="' + len.toFixed(2) + ' ' + (C - len).toFixed(2) + '" ' +
+          'stroke-dashoffset="' + (-offset).toFixed(2) + '" ' +
+          'transform="rotate(-90 50 50)"/>';
+      offset += len;
+    });
     
-    const C = 2 * Math.PI * 38;
-    const manLen = C * manPct;
-    const pedLen = C - manLen;
+    pieSvg = '<svg viewBox="0 0 100 100" style="width:90px; height:90px; flex-shrink:0;">' + circlesHtml + '</svg>';
     
-    pieSvg = 
-      '<svg viewBox="0 0 100 100" style="width:90px; height:90px; flex-shrink:0;">' +
-        '<circle cx="50" cy="50" r="38" fill="none" stroke="#FFA726" stroke-width="14" ' +
-                'stroke-dasharray="' + manLen.toFixed(2) + ' ' + (C - manLen).toFixed(2) + '" ' +
-                'transform="rotate(-90 50 50)"/>' +
-        '<circle cx="50" cy="50" r="38" fill="none" stroke="#60A5FA" stroke-width="14" ' +
-                'stroke-dasharray="' + pedLen.toFixed(2) + ' ' + (C - pedLen).toFixed(2) + '" ' +
-                'stroke-dashoffset="' + (-manLen).toFixed(2) + '" transform="rotate(-90 50 50)"/>' +
-      '</svg>';
-    
-    legendHtml = 
-      '<div style="flex:1; min-width:0;">' +
-        '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:13px;">' +
+    legendHtml = '<div style="flex:1; min-width:0;">';
+    items.forEach(function(it, i) {
+      const pctRounded = Math.round(it.total / total * 100);
+      const isLast = i === items.length - 1;
+      legendHtml +=
+        '<div style="display:flex; justify-content:space-between; align-items:center; font-size:13px;' + (isLast ? '' : ' margin-bottom:8px;') + '">' +
           '<span style="display:flex; align-items:center; gap:6px; color:var(--muted);">' +
-            '<span style="width:10px;height:10px;border-radius:50%;background:#FFA726;display:inline-block;flex-shrink:0;"></span>' +
-            'Маникюр' +
+            '<span style="width:10px;height:10px;border-radius:50%;background:' + it.color + ';display:inline-block;flex-shrink:0;"></span>' +
+            escapeHtml(it.name) +
           '</span>' +
-          '<span style="white-space:nowrap;"><b style="color:var(--ink);">' + manPctRounded + '%</b><span style="color:var(--muted);"> · </span><b style="color:var(--green);">' + formatMoney(manSum) + '</b></span>' +
-        '</div>' +
-        '<div style="display:flex; justify-content:space-between; align-items:center; font-size:13px;">' +
-          '<span style="display:flex; align-items:center; gap:6px; color:var(--muted);">' +
-            '<span style="width:10px;height:10px;border-radius:50%;background:#60A5FA;display:inline-block;flex-shrink:0;"></span>' +
-            'Педикюр' +
-          '</span>' +
-          '<span style="white-space:nowrap;"><b style="color:var(--ink);">' + pedPctRounded + '%</b><span style="color:var(--muted);"> · </span><b style="color:var(--green);">' + formatMoney(pedSum) + '</b></span>' +
-        '</div>' +
-      '</div>';
+          '<span style="white-space:nowrap;"><b style="color:var(--ink);">' + pctRounded + '%</b><span style="color:var(--muted);"> · </span><b style="color:var(--green);">' + formatMoney(it.total) + '</b></span>' +
+        '</div>';
+    });
+    legendHtml += '</div>';
   }
   
   el('servicesPieWrap').innerHTML =
@@ -3898,6 +3994,7 @@ function doCloseAllSheetsInternal() {
   el('categorySheet').classList.remove('open');
   el('welcomeSheet').classList.remove('open');
   el('noteSheet').classList.remove('open');
+  el('alertSheet').classList.remove('open');
   editingId = null;
   currentQuickId = null;
   editingServiceId = null;
@@ -3959,7 +4056,8 @@ window.handleOverlayClick = function() {
         !el('priceSheet').classList.contains('open') &&
         !el('categorySheet').classList.contains('open') &&
         !el('welcomeSheet').classList.contains('open') &&
-        !el('noteSheet').classList.contains('open')) {
+        !el('noteSheet').classList.contains('open') &&
+        !el('alertSheet').classList.contains('open')) {
       overlay.classList.remove('show');
       popSheetHistory();
     }
@@ -4007,6 +4105,28 @@ el('confirmNo').onclick = function() {
   }
 };
 
+/* ====== Красивое информационное окошко ====== */
+window.showAlert = function(title, messageHtml, okText) {
+  el('alertTitle').textContent = title || 'Внимание';
+  el('alertText').innerHTML = messageHtml || '';
+  el('alertOk').textContent = okText || 'Понятно';
+  overlay.classList.add('show');
+  el('alertSheet').classList.add('open');
+  pushSheetHistory();
+};
+
+window.closeAlertSheet = function() {
+  el('alertSheet').classList.remove('open');
+  if (!document.querySelector('.sheet.open')) {
+    overlay.classList.remove('show');
+    popSheetHistory();
+  }
+};
+
+el('alertOk').onclick = function() {
+  closeAlertSheet();
+};
+
 window.openQuickView = function(id) {
   const r = records.find(function(x) { return x.id === id; });
   if(!r) return;
@@ -4026,7 +4146,15 @@ window.openQuickView = function(id) {
   if (r.status === 'plan') {
     el('qActionArea').style.display = 'block';
     el('qSummaryArea').style.display = 'none';
-    el('qPrice').value = r.price || '';
+    let prefPrice = Number(r.price) || 0;
+    if (!prefPrice && r.service) {
+      const sName = String(r.service).trim().toLowerCase();
+      const srv = services.find(function(s) {
+        return String(s.name || '').trim().toLowerCase() === sName;
+      });
+      if (srv && Number(srv.price) > 0) prefPrice = Number(srv.price);
+    }
+    el('qPrice').value = prefPrice || '';
     el('qExp').value = r.expenses || '';
     updateQuickDoneState();
   } else {
@@ -4123,6 +4251,26 @@ el('recordForm').onsubmit = function(e) {
   
   let finalDate = editingId ? el('fDate').value : el('fDateHidden').value;
   let finalTime = el('fTime').value;
+
+  // Проверка занятости времени
+  if (finalDate && finalTime) {
+    const conflict = records.find(function(r) {
+      if (editingId && r.id === editingId) return false;
+      if (r.date !== finalDate) return false;
+      if (r.time !== finalTime) return false;
+      if (r.status === 'cancel') return false;
+      return true;
+    });
+    if (conflict) {
+      showAlert(
+        'Время занято',
+        'Это время уже занято записью:<br><span style="color:var(--ink); font-weight:700;">' +
+          escapeHtml(conflict.name || 'Без имени') + ' — ' + escapeHtml(conflict.time || '00:00') +
+        '</span>'
+      );
+      return;
+    }
+  }
 
   const rec = {
     id: editingId || uid(),
