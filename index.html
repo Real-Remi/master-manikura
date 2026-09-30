@@ -900,14 +900,24 @@ html.glass-panels .monthlist-close {
 .slide-prev { animation: slidePrev 0.3s ease-out forwards; }
 
 .month-nav {
-  position: absolute; top: 6px; width: 30px; height: 30px;
-  display: grid; place-items: center;
-  font-size: 20px; font-weight: 300; line-height: 1;
-  user-select: none; -webkit-user-select: none;
-  border-radius: 8px; transition: background 0.15s, color 0.15s; z-index: 2;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  font-weight: 300;
+  line-height: 1;
+  user-select: none;
+  -webkit-user-select: none;
+  border-radius: 8px;
+  transition: background 0.15s, color 0.15s;
+  z-index: 3;
 }
-.month-nav.left { left: 6px; }
-.month-nav.right { right: 6px; }
+.month-nav.left { left: 2px; }
+.month-nav.right { right: 2px; }
 .month-nav.enabled { color: var(--muted); cursor: pointer; }
 .month-nav.enabled:active { background: var(--panel2); color: var(--ink); }
 .month-nav.disabled { color: var(--dim); cursor: default; opacity: 0.4; }
@@ -917,6 +927,10 @@ html.glass-panels .monthlist-close {
 #monthCompareContent {
   overflow: hidden;
 }
+
+#monthHistory { position: relative; overflow: hidden; border-radius: 16px; }
+#monthHistory .cal-card { position: relative; z-index: 1; }
+#monthHistoryContent { overflow: hidden; }
 
 .price-card {
   position: relative;
@@ -1358,7 +1372,7 @@ setTimeout(hideSplashScreen, 5000);
           <div class="stat">
             <div class="lbl">Записей сегодня</div>
             <div class="val" id="statCount">0</div>
-            <div class="sub">клиенток</div>
+            <div class="sub" id="statCountSub">клиенток</div>
           </div>
         </div>
         
@@ -1434,6 +1448,16 @@ setTimeout(hideSplashScreen, 5000);
         </div>
       </div>
 
+      <div id="monthHistory" style="margin-bottom:12px;">
+        <div class="cal-card" style="padding:14px; position:relative; overflow:hidden;">
+          <div class="month-nav left" id="monthHistoryLeft">‹</div>
+          <div class="month-nav right" id="monthHistoryRight">›</div>
+          <div id="monthHistoryContent"></div>
+        </div>
+      </div>
+
+      <div class="scr-title">Анализ дохода</div>
+
       <div id="monthCompare" style="margin-bottom:12px;">
         <div class="cal-card" style="padding:14px; position:relative; overflow:hidden;">
           <div class="month-nav left" id="monthCompareLeft">‹</div>
@@ -1446,9 +1470,6 @@ setTimeout(hideSplashScreen, 5000);
       <div id="servicesPieWrap" style="margin-bottom:12px;"></div>
       <div id="topClientsWrap" style="margin-bottom:12px;"></div>
       <div id="topServicesWrap" style="margin-bottom:12px;"></div>
-
-      <div class="scr-title" style="font-size:14px; color:var(--ink); margin-bottom: 8px;">История</div>
-      <div id="monthsList"></div>
     </section>
 
     <section class="screen" id="screen-price">
@@ -1814,6 +1835,8 @@ let topServicesMode = 'count';
 
 let compareMonthY = new Date().getFullYear();
 let compareMonthM = new Date().getMonth();
+let historyMonthY = new Date().getFullYear();
+let historyMonthM = new Date().getMonth();
 const MAX_MONTHS_BACK = 24;
 
 /* ====== ЗАМЕТКИ ====== */
@@ -1836,10 +1859,10 @@ function isIOSDevice() {
   } catch(e) { return false; }
 }
 
-/* Усиленная вибрация: базовые 35мс, длинные нажатия 50мс */
+/* Вибрация: базовые 20мс, длинные нажатия 30мс */
 function haptic(ms) {
   if (!vibrationEnabled) return;
-  try { if (navigator.vibrate) navigator.vibrate(ms || 35); } catch(e) {}
+  try { if (navigator.vibrate) navigator.vibrate(ms || 20); } catch(e) {}
 }
 
 function applyVibrationSwitch() {
@@ -1853,7 +1876,7 @@ window.toggleVibration = function() {
   vibrationEnabled = !vibrationEnabled;
   try { localStorage.setItem(VIBRATION_KEY, vibrationEnabled ? '1' : '0'); } catch(e) {}
   applyVibrationSwitch();
-  if (vibrationEnabled) haptic(50);
+  if (vibrationEnabled) haptic(30);
 };
 
 function hideVibrationCardOnIOS() {
@@ -2312,6 +2335,30 @@ function pluralVisits(n) {
   return 'визитов';
 }
 
+/* Склонение: клиентка / клиентки / клиенток */
+function pluralClients(n) {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return 'клиентка';
+  if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return 'клиентки';
+  return 'клиенток';
+}
+
+/* Склонение: запись / записи / записей */
+function pluralRecords(n) {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return 'запись';
+  if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return 'записи';
+  return 'записей';
+}
+
+/* Склонение: услуга / услуги / услуг */
+function pluralServices(n) {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return 'услуга';
+  if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return 'услуги';
+  return 'услуг';
+}
+
 const STAR_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M12 2l3 6 6 1-4.5 4.5 1 6-5.5-3-5.5 3 1-6L3 9l6-1z"/></svg>';
 const TROPHY_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>';
 
@@ -2595,6 +2642,8 @@ function switchScreen(index, fromHistory) {
     const now = new Date();
     compareMonthY = now.getFullYear();
     compareMonthM = now.getMonth();
+    historyMonthY = now.getFullYear();
+    historyMonthM = now.getMonth();
   }
 
   // Календарь: при каждом входе показываем текущий месяц
@@ -2628,7 +2677,7 @@ function switchScreen(index, fromHistory) {
 
 document.querySelectorAll('.tab-btn').forEach(function(btn, idx) {
   btn.addEventListener('click', function() {
-    haptic(35);
+    haptic(20);
     const scr = btn.dataset.screen;
     const i = screensList.indexOf(scr);
     if (i > -1) switchScreen(i);
@@ -2688,6 +2737,13 @@ applySwipe(el('calendarZone'),
 applySwipe(el('monthCompare'),
   function() { changeCompareMonth(1); },
   function() { changeCompareMonth(-1); },
+  { stop: true }
+);
+
+/* Свайп по «Истории»: влево → следующий месяц, вправо → прошлый (как у compare) */
+applySwipe(el('monthHistory'),
+  function() { changeHistoryMonth(1); },
+  function() { changeHistoryMonth(-1); },
   { stop: true }
 );
 
@@ -2813,6 +2869,8 @@ function renderHome() {
   });
   
   el('statCount').textContent = todayCount;
+  const sub = el('statCountSub');
+  if (sub) sub.textContent = pluralClients(todayCount);
   el('statToday').textContent = formatPos(todayNet);
   
   if (query) {
@@ -3166,6 +3224,108 @@ function renderMonthCompare(slideDir) {
     content.classList.add(slideDir > 0 ? 'slide-next' : 'slide-prev');
   }
 }
+
+/* ====== КАРТОЧКА «ИСТОРИЯ» (одна карточка со свайпом по месяцам) ====== */
+function getMonthStats(y, m) {
+  const prefix = y + '-' + String(m + 1).padStart(2, '0');
+  let total = 0, exp = 0, clients = 0, man = 0, ped = 0;
+  records.forEach(function(r) {
+    if (r.status !== 'done') return;
+    if (!r.date || !r.date.startsWith(prefix)) return;
+    total += Number(r.price) || 0;
+    exp += Number(r.expenses) || 0;
+    clients++;
+    const sLow = (r.service || '').toLowerCase();
+    const isPed = sLow.indexOf('педикюр') !== -1;
+    if (isPed) ped++; else man++;
+  });
+  return { total: total, exp: exp, clients: clients, man: man, ped: ped };
+}
+
+function findHistoryMonth(startY, startM, dir) {
+  let y = startY, m = startM;
+  const now = new Date();
+  const maxY = now.getFullYear(), maxM = now.getMonth();
+  for (let i = 0; i < MAX_MONTHS_BACK + 24; i++) {
+    m += dir;
+    if (m < 0) { m = 11; y--; }
+    else if (m > 11) { m = 0; y++; }
+    if (y > maxY || (y === maxY && m > maxM)) return null;
+    const monthsBack = (maxY - y) * 12 + (maxM - m);
+    if (monthsBack > MAX_MONTHS_BACK) return null;
+    // К текущему месяцу возвращаемся всегда
+    if (y === maxY && m === maxM) return { y: y, m: m };
+    // Иначе — только месяц с выполненными записями
+    if (hasDoneInMonth(y, m)) return { y: y, m: m };
+  }
+  return null;
+}
+
+function renderMonthHistory(slideDir) {
+  const content = el('monthHistoryContent');
+  if (!content) return;
+
+  const y = historyMonthY;
+  const m = historyMonthM;
+  const stats = getMonthStats(y, m);
+  const net = stats.total - stats.exp;
+  const monthName = MONTHS_NAMES[m] + ' ' + y;
+
+  const canPrev = findHistoryMonth(y, m, -1) !== null;
+  const canNext = findHistoryMonth(y, m, 1) !== null;
+
+  const leftEl = el('monthHistoryLeft');
+  const rightEl = el('monthHistoryRight');
+  if (leftEl) {
+    leftEl.className = 'month-nav left ' + (canPrev ? 'enabled' : 'disabled');
+    leftEl.onclick = function(e) {
+      e.stopPropagation();
+      if (canPrev) changeHistoryMonth(-1);
+    };
+  }
+  if (rightEl) {
+    rightEl.className = 'month-nav right ' + (canNext ? 'enabled' : 'disabled');
+    rightEl.onclick = function(e) {
+      e.stopPropagation();
+      if (canNext) changeHistoryMonth(1);
+    };
+  }
+
+  content.innerHTML =
+    '<div style="padding: 0 24px;">' +
+      '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:8px;">' +
+        '<strong style="font-size:16px; color:var(--ink); line-height:1.2;">' + monthName + '</strong>' +
+        '<b style="font: 800 16px \'Nunito\', sans-serif; color:var(--green); white-space:nowrap;">' + formatPos(net) + '</b>' +
+      '</div>' +
+      '<div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:10px;">' +
+        '<span style="color:var(--muted)">Доход: <b style="color:var(--green)">' + formatPos(stats.total) + '</b></span>' +
+        '<span style="color:var(--muted)">Расход: <b style="color:var(--red)">' + formatNeg(stats.exp) + '</b></span>' +
+      '</div>' +
+      '<div style="font-size:11px; color:var(--dim); border-top:1px dashed var(--line); padding-top:10px;">' +
+        'Клиенток: <b style="color:var(--ink)">' + stats.clients + '</b> (Ман: ' + stats.man + ', Пед: ' + stats.ped + ')' +
+      '</div>' +
+    '</div>';
+
+  if (slideDir) {
+    content.classList.remove('slide-next', 'slide-prev');
+    void content.offsetWidth;
+    content.classList.add(slideDir > 0 ? 'slide-next' : 'slide-prev');
+  }
+}
+
+window.changeHistoryMonth = function(dir) {
+  const next = findHistoryMonth(historyMonthY, historyMonthM, dir);
+  if (!next) return;
+  historyMonthY = next.y;
+  historyMonthM = next.m;
+  renderMonthHistory(dir);
+};
+
+window.openHistoryMonthDetails = function() {
+  const monthKey = historyMonthY + '-' + String(historyMonthM + 1).padStart(2, '0');
+  const monthName = MONTHS_NAMES[historyMonthM] + ' ' + historyMonthY;
+  openMonthDetails(monthKey, monthName);
+};
 
 function renderAvgStats() {
   const done = records.filter(function(r) { return r.status === 'done'; });
@@ -3619,14 +3779,9 @@ window.setTopServicesMode = function(mode) {
 
 function renderMoney() {
   let totalInc = 0, totalExp = 0, totalMan = 0, totalPed = 0;
-  let grouped = {};
   
   records.forEach(function(r) {
     if(r.status === 'done') {
-      const p = r.date ? r.date.substring(0,7) : '';
-      if (!p) return;
-      if(!grouped[p]) grouped[p] = { total: 0, exp: 0, clients: 0, man: 0, ped: 0 };
-      
       const pPrice = Number(r.price) || 0;
       const pExp = Number(r.expenses) || 0;
       
@@ -3638,11 +3793,6 @@ function renderMoney() {
       totalInc += pPrice;
       totalExp += pExp;
       if (isPed) totalPed++; else totalMan++;
-
-      grouped[p].total += pPrice;
-      grouped[p].exp += pExp;
-      grouped[p].clients++;
-      if (isPed) grouped[p].ped++; else grouped[p].man++;
     }
   });
   
@@ -3651,41 +3801,13 @@ function renderMoney() {
   el('mCountManicure').textContent = 'Ман: ' + totalMan;
   el('mCountPedicure').textContent = 'Пед: ' + totalPed;
   
+  renderMonthHistory();
   renderMonthCompare();
   renderAvgStats();
   renderDailyChart();
   renderServicesPie();
   renderTopClients();
   renderTopServices();
-  
-  const months = MONTHS_NAMES;
-
-  const mList = Object.keys(grouped).sort().reverse().map(function(k) {
-    const mData = grouped[k];
-    const net = mData.total - mData.exp;
-    const parts = k.split('-');
-    const y = parts[0], m = parts[1];
-    const monthName = months[parseInt(m, 10) - 1] + ' ' + y;
-
-    return '<div class="cal-card" style="margin-bottom:8px; padding:12px; cursor:pointer;" onclick="openMonthDetails(\'' + k + '\', \'' + monthName + '\')">' +
-             '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px;">' +
-               '<strong style="font-size:14px; color:var(--ink);">' + monthName + '</strong>' +
-               '<div style="display:flex; align-items:center; gap:8px;">' +
-                 '<b class="price" style="font-size:14px; color:var(--green)">' + formatPos(net) + '</b>' +
-                 '<span class="card-chev">›</span>' +
-               '</div>' +
-             '</div>' +
-             '<div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:8px;">' +
-               '<span style="color:var(--muted)">Доход: <b style="color:var(--green)">' + formatPos(mData.total) + '</b></span>' +
-               '<span style="color:var(--muted)">Расход: <b style="color:var(--red)">' + formatNeg(mData.exp) + '</b></span>' +
-             '</div>' +
-             '<div style="font-size:11px; color:var(--dim); border-top:1px dashed var(--line); padding-top:8px;">' +
-               'Клиенток: <b style="color:var(--ink)">' + mData.clients + '</b> (Ман: ' + mData.man + ', Пед: ' + mData.ped + ')' +
-             '</div>' +
-           '</div>';
-  }).join('');
-  
-  el('monthsList').innerHTML = mList || '<div style="color:var(--dim); padding:10px; text-align:center;">Нет данных о выполненных работах</div>';
 }
 
 window.openMonthDetails = function(monthKey, title) {
@@ -3801,7 +3923,7 @@ function onCatDragStart(e) {
     if (dragCtx.startIndex !== dragCtx.hoverIndex) return;
     dragCtx.active = true;
     dragCtx.cardEl.classList.add('dragging');
-    haptic(50);
+    haptic(30);
   }, DRAG_LONG_PRESS_MS);
 }
 
@@ -3832,7 +3954,7 @@ function onCatDragMove(e) {
   if (newHover !== dragCtx.hoverIndex) {
     dragCtx.hoverIndex = newHover;
     applyCatDragShifts();
-    haptic(20);
+    haptic(15);
   }
 }
 
@@ -4281,7 +4403,8 @@ el('recordForm').onsubmit = function(e) {
         'Время занято',
         'Это время уже занято записью:<br><span style="color:var(--ink); font-weight:700;">' +
           escapeHtml(conflict.name || 'Без имени') + ' — ' + escapeHtml(conflict.time || '00:00') +
-        '</span>'
+        '</span>',
+        'Понятно'
       );
       return;
     }
@@ -4559,13 +4682,26 @@ el('importFile').onchange = function(e) {
   reader.onload = function(event) {
     try {
       const data = JSON.parse(event.target.result);
-      if(data.records) records = data.records;
-      if(data.services) services = data.services;
+      let recCount = 0;
+      let srvCount = 0;
+      let catCount = 0;
+      let noteCount = 0;
+
+      if(data.records && Array.isArray(data.records)) {
+        records = data.records;
+        recCount = records.length;
+      }
+      if(data.services && Array.isArray(data.services)) {
+        services = data.services;
+        srvCount = services.length;
+      }
       if(Array.isArray(data.priceCategories) && data.priceCategories.length > 0) {
         priceCategories = data.priceCategories;
+        catCount = priceCategories.length;
       }
       if(Array.isArray(data.notes)) {
         notes = data.notes;
+        noteCount = notes.length;
         localStorage.setItem('nail_notes', JSON.stringify(notes));
       }
       
@@ -4573,9 +4709,28 @@ el('importFile').onchange = function(e) {
       localStorage.setItem('nail_services', JSON.stringify(services));
       localStorage.setItem('nail_price_categories', JSON.stringify(priceCategories));
       renderAll();
-      alert('Данные успешно загружены!');
+
+      const msg =
+        '<div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px;">' +
+          '<span>Записей:</span><b style="color:var(--muted);">' + recCount + ' ' + pluralRecords(recCount) + '</b>' +
+        '</div>' +
+        '<div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px;">' +
+          '<span>Услуг в прайсе:</span><b style="color:var(--muted);">' + srvCount + ' ' + pluralServices(srvCount) + '</b>' +
+        '</div>' +
+        '<div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px;">' +
+          '<span>Разделов прайса:</span><b style="color:var(--muted);">' + catCount + '</b>' +
+        '</div>' +
+        '<div style="display:flex; justify-content:space-between; font-size:13px;">' +
+          '<span>Заметок:</span><b style="color:var(--muted);">' + noteCount + '</b>' +
+        '</div>';
+
+      showAlert('Данные восстановлены', msg, 'Готово');
     } catch(err) {
-      alert('Ошибка: файл поврежден или имеет неверный формат.');
+      showAlert(
+        'Ошибка',
+        'Файл повреждён или имеет неверный формат.<br>Попробуйте другой файл резервной копии.',
+        'Понятно'
+      );
     }
   };
   reader.readAsText(file);
