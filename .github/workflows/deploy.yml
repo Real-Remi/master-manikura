@@ -1,0 +1,29 @@
+name: Deploy PWA
+
+on:
+  push:
+    branches: [main] # Укажите вашу основную ветку (main или master)
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Inject commit SHA into sw.js
+        run: |
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          sed -i "s/beauty-master-v2\.7/beauty-master-${COMMIT_SHA}/" sw.js
+          echo "Cache version set to: beauty-master-${COMMIT_SHA}"
+      
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./
