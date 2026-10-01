@@ -372,7 +372,6 @@ html.glass-panels .monthlist-close {
   justify-content: center; text-align: center;
   margin-bottom: 12px;
 }
-/* Обёртка для заголовка с абсолютной кнопкой справа — точная высота как у .scr-title */
 .title-row {
   position: relative;
   margin-bottom: 12px;
@@ -932,6 +931,59 @@ html.glass-panels .monthlist-close {
 #monthHistory .cal-card { position: relative; z-index: 1; }
 #monthHistoryContent { overflow: hidden; }
 
+/* ===== Строка статистики в карточке «За всё время» / «Месяц» (Доходы) ===== */
+.m-stats-row {
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.9;
+}
+.m-stats-row .m-item {
+  display: inline-block;
+  white-space: nowrap;
+}
+.m-stats-row .m-div {
+  display: inline-block;
+  width: 0;
+  height: 12px;
+  border-left: 1px dashed var(--dim);
+  margin: 0 6px;
+  vertical-align: middle;
+}
+
+/* Бейдж с чистым доходом (в карточке «За всё время» и «Месяц») */
+.m-net-badge {
+  background: var(--green-soft);
+  color: var(--green);
+  font: 800 15px/1 "Nunito", system-ui, sans-serif;
+  padding: 7px 14px 6px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Заголовок карточки («ЗА ВСЁ ВРЕМЯ» / «ОКТЯБРЬ 2026») */
+.m-card-title {
+  font-size: 11px;
+  color: var(--ink);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+/* Строки «Доход» / «Расход» внутри карточки */
+.m-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+.m-line > span { color: var(--muted); }
+
 .price-card {
   position: relative;
   border-radius: 14px; padding: 12px; display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px; cursor: pointer;
@@ -1430,21 +1482,27 @@ setTimeout(hideSplashScreen, 5000);
       <div class="scr-title">Доходы по месяцам</div>
       
       <div class="cal-card" style="margin-bottom:12px; padding:12px;">
-        <div style="font-size:11px; color:var(--ink); margin-bottom: 8px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">За всё время</div>
-        
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-size:13px;">
-          <span style="color:var(--muted)">Общий доход</span><b class="price" id="mTotal" style="font-size:15px; color:var(--green)">+0 ₽</b>
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px;">
+          <div class="m-card-title">За всё время</div>
+          <div id="mNetBadge" class="m-net-badge">+0 ₽</div>
         </div>
         
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-size:13px;">
-          <span style="color:var(--muted)">Общие расходы</span><b class="price" id="mExp" style="color:var(--red)">-0 ₽</b>
+        <div class="m-line">
+          <span>Общий доход</span><b id="mTotal" style="color:var(--green)">+0 ₽</b>
         </div>
         
-        <div style="display:flex; justify-content:space-between; align-items:center; padding-top:6px; border-top: 1px dashed var(--line); font-size:12px;">
-          <span style="color:var(--muted)">Услуг:</span>
-          <div style="text-align:right; font-weight:600; color:var(--ink);">
-            <span id="mCountManicure">Ман: 0</span> <span style="color:var(--line); margin:0 4px;">|</span> <span id="mCountPedicure">Пед: 0</span>
-          </div>
+        <div class="m-line">
+          <span>Общие расходы</span><b id="mExp" style="color:var(--red)">-0 ₽</b>
+        </div>
+        
+        <div class="m-stats-row">
+          <span class="m-item">Клиенток: <span id="mCountClients">0</span></span>
+          <span class="m-div"></span>
+          <span class="m-item">Маникюр: <span id="mCountManicure">0</span></span>
+          <span class="m-div"></span>
+          <span class="m-item">Педикюр: <span id="mCountPedicure">0</span></span>
+          <span class="m-div"></span>
+          <span class="m-item">Другое: <span id="mCountOther">0</span></span>
         </div>
       </div>
 
@@ -1833,9 +1891,6 @@ let formStatus = 'plan';
 let topClientsMode = 'money';
 let topServicesMode = 'count';
 
-/* compareMonthY/M — последний ЗАКРЫТЫЙ месяц (не текущий).
-   historyMonthY/M — текущий месяц (история показывает текущий месяц).
-   Начальные значения устанавливаются ниже, после загрузки records. */
 let compareMonthY = 0;
 let compareMonthM = 0;
 let historyMonthY = new Date().getFullYear();
@@ -1862,7 +1917,6 @@ function isIOSDevice() {
   } catch(e) { return false; }
 }
 
-/* Вибрация: базовые 20мс, длинные нажатия 30мс */
 function haptic(ms) {
   if (!vibrationEnabled) return;
   try { if (navigator.vibrate) navigator.vibrate(ms || 20); } catch(e) {}
@@ -1909,7 +1963,7 @@ window.toggleThemeSwitch = function() {
   applyThemeSwitch();
 };
 
-/* ====== Цвета категорий (для графика «По услугам») ====== */
+/* ====== Цвета категорий ====== */
 const CATEGORY_COLORS = {
   manicure: '#FFA726',
   pedicure: '#60A5FA',
@@ -1931,7 +1985,6 @@ function getCategoryColor(cat) {
   return EXTRA_PALETTE[(idx >= 0 ? idx : 0) % EXTRA_PALETTE.length];
 }
 
-/* Ищем категорию услуги по её названию в записи */
 function findCategoryForService(serviceName) {
   const sName = String(serviceName || '').trim().toLowerCase();
   if (!sName) return null;
@@ -2319,14 +2372,8 @@ let currentQuickId = null;
 let editingId = null; 
 let editingServiceId = null;
 
-/* Состояние страницы «список записей» (#screen-monthlist).
-   Хранит функцию getRecords(), которая возвращает актуальный массив.
-   Используется в refreshMonthListPage() и renderAll(). */
 let monthListState = null;
 
-/* Инициализируем месяцы для аналитики.
-   compareMonth — последний ЗАКРЫТЫЙ месяц с данными (или просто последний закрытый).
-   historyMonth — текущий месяц. */
 (function initMonths() {
   const now = new Date();
   historyMonthY = now.getFullYear();
@@ -2337,7 +2384,6 @@ let monthListState = null;
     compareMonthY = lc.y;
     compareMonthM = lc.m;
   } else {
-    // Ищем ближайший закрытый месяц с данными
     let found = null;
     let y = lc.y, m = lc.m;
     for (let i = 0; i < MAX_MONTHS_BACK; i++) {
@@ -2374,7 +2420,6 @@ function pluralVisits(n) {
   return 'визитов';
 }
 
-/* Склонение: клиентка / клиентки / клиенток */
 function pluralClients(n) {
   const m10 = n % 10, m100 = n % 100;
   if (m10 === 1 && m100 !== 11) return 'клиентка';
@@ -2382,7 +2427,6 @@ function pluralClients(n) {
   return 'клиенток';
 }
 
-/* Склонение: запись / записи / записей */
 function pluralRecords(n) {
   const m10 = n % 10, m100 = n % 100;
   if (m10 === 1 && m100 !== 11) return 'запись';
@@ -2390,7 +2434,6 @@ function pluralRecords(n) {
   return 'записей';
 }
 
-/* Склонение: услуга / услуги / услуг */
 function pluralServices(n) {
   const m10 = n % 10, m100 = n % 100;
   if (m10 === 1 && m100 !== 11) return 'услуга';
@@ -2404,7 +2447,6 @@ const TROPHY_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" 
 const MONTHS_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 const MONTHS_INSTRUMENTAL = ['Январём','Февралём','Мартом','Апрелем','Маем','Июнем','Июлем','Августом','Сентябрём','Октябрём','Ноябрём','Декабрём'];
 
-/* Последний ЗАКРЫТЫЙ месяц (не текущий). Например, сейчас октябрь → вернёт сентябрь. */
 function getLastClosedMonth() {
   const now = new Date();
   let y = now.getFullYear();
@@ -2534,7 +2576,7 @@ function updateQuickDoneState() {
 }
 el('qPrice').addEventListener('input', updateQuickDoneState);
 
-/* ====== Заметки: рендер и операции ====== */
+/* ====== Заметки ====== */
 function renderNotes() {
   const list = el('notesList');
   if (!list) return;
@@ -2644,7 +2686,7 @@ window.deleteNote = function() {
   );
 };
 
-/* ====== Настройки: открытие через шапку ====== */
+/* ====== Настройки через шапку ====== */
 window.openSettings = function() {
   const idx = screensList.indexOf('data');
   if (idx > -1) switchScreen(idx);
@@ -2653,7 +2695,6 @@ window.openSettings = function() {
 const screensList = ['home', 'calendar', 'money', 'price', 'notes', 'data'];
 let currentScreenIndex = 0;
 
-// Экраны, между которыми разрешены свайпы (только таб-барные)
 const SWIPEABLE_SCREENS = ['home', 'calendar', 'money', 'price', 'notes'];
 
 function findSwipeTarget(curIdx, dir) {
@@ -2688,7 +2729,6 @@ function switchScreen(index, fromHistory) {
 
   if (targetScreen !== 'money') {
     const now = new Date();
-    /* Сбрасываем карточку «Анализ дохода» в последний ЗАКРЫТЫЙ месяц */
     const lc = getLastClosedMonth();
     if (hasDoneInMonth(lc.y, lc.m)) {
       compareMonthY = lc.y;
@@ -2713,7 +2753,6 @@ function switchScreen(index, fromHistory) {
     historyMonthM = now.getMonth();
   }
 
-  // Календарь: при каждом входе показываем текущий месяц
   if (targetScreen === 'calendar') {
     const now = new Date();
     currentMonth = now.getMonth();
@@ -2735,7 +2774,6 @@ function switchScreen(index, fromHistory) {
   renderAll();
   resetHomeScroll();
 
-  // Доходы: при каждом входе скроллим наверх
   if (targetScreen === 'money') {
     var moneyEl = el('screen-money');
     if (moneyEl) moneyEl.scrollTop = 0;
@@ -2807,7 +2845,6 @@ applySwipe(el('monthCompare'),
   { stop: true }
 );
 
-/* Свайп по «Истории»: влево → следующий месяц, вправо → прошлый (как у compare) */
 applySwipe(el('monthHistory'),
   function() { changeHistoryMonth(1); },
   function() { changeHistoryMonth(-1); },
@@ -2824,7 +2861,6 @@ const formatNeg = function(n) {
   return (n > 0 ? '-' : '') + formatMoney(n); 
 };
 
-/* Таймзоно-безопасный парсер: "YYYY-MM-DD" → локальная дата (не UTC) */
 const parseLocalDate = function(dateStr) {
   if (!dateStr) return new Date(NaN);
   const s = String(dateStr);
@@ -3215,8 +3251,6 @@ function hasDoneInMonth(y, m) {
   return false;
 }
 
-/* Поиск месяца с данными в направлении dir, начиная со startY/startM.
-   ВАЖНО: не пускает вперёд за последний ЗАКРЫТЫЙ месяц (текущий незакрытый не показываем). */
 function findMonthWithData(startY, startM, dir) {
   let y = startY, m = startM;
   const lc = getLastClosedMonth();
@@ -3293,7 +3327,6 @@ function renderMonthCompare(slideDir) {
   const canPrev = findMonthWithData(y, m, -1) !== null;
   const canNext = findMonthWithData(y, m, 1) !== null;
   
-  // Обновляем стрелки
   const leftEl = el('monthCompareLeft');
   const rightEl = el('monthCompareRight');
   leftEl.className = 'month-nav left ' + (canPrev ? 'enabled' : 'disabled');
@@ -3301,7 +3334,6 @@ function renderMonthCompare(slideDir) {
   leftEl.onclick = canPrev ? function() { changeCompareMonth(-1); } : null;
   rightEl.onclick = canNext ? function() { changeCompareMonth(1); } : null;
   
-  // Обновляем только содержимое (без пунктира и подсказки)
   const content = el('monthCompareContent');
   
   content.innerHTML =
@@ -3321,21 +3353,25 @@ function renderMonthCompare(slideDir) {
   }
 }
 
-/* ====== КАРТОЧКА «ИСТОРИЯ» (одна карточка со свайпом по месяцам) ====== */
+/* ====== КАРТОЧКА «ИСТОРИЯ» ====== */
 function getMonthStats(y, m) {
   const prefix = y + '-' + String(m + 1).padStart(2, '0');
-  let total = 0, exp = 0, clients = 0, man = 0, ped = 0;
+  let total = 0, exp = 0;
+  let man = 0, ped = 0, other = 0;
+  const clientSet = new Set();
   records.forEach(function(r) {
     if (r.status !== 'done') return;
     if (!r.date || !r.date.startsWith(prefix)) return;
     total += Number(r.price) || 0;
     exp += Number(r.expenses) || 0;
-    clients++;
-    const sLow = (r.service || '').toLowerCase();
-    const isPed = sLow.indexOf('педикюр') !== -1;
-    if (isPed) ped++; else man++;
+    const nm = (r.name || '').trim().toLowerCase();
+    if (nm) clientSet.add(nm);
+    const cat = findCategoryForService(r.service);
+    if (cat === 'manicure') man++;
+    else if (cat === 'pedicure') ped++;
+    else other++;
   });
-  return { total: total, exp: exp, clients: clients, man: man, ped: ped };
+  return { total: total, exp: exp, clients: clientSet.size, man: man, ped: ped, other: other };
 }
 
 function findHistoryMonth(startY, startM, dir) {
@@ -3349,9 +3385,7 @@ function findHistoryMonth(startY, startM, dir) {
     if (y > maxY || (y === maxY && m > maxM)) return null;
     const monthsBack = (maxY - y) * 12 + (maxM - m);
     if (monthsBack > MAX_MONTHS_BACK) return null;
-    // К текущему месяцу возвращаемся всегда
     if (y === maxY && m === maxM) return { y: y, m: m };
-    // Иначе — только месяц с выполненными записями
     if (hasDoneInMonth(y, m)) return { y: y, m: m };
   }
   return null;
@@ -3365,7 +3399,7 @@ function renderMonthHistory(slideDir) {
   const m = historyMonthM;
   const stats = getMonthStats(y, m);
   const net = stats.total - stats.exp;
-  const monthName = MONTHS_NAMES[m] + ' ' + y;
+  const monthName = (MONTHS_NAMES[m] + ' ' + y).toUpperCase();
 
   const canPrev = findHistoryMonth(y, m, -1) !== null;
   const canNext = findHistoryMonth(y, m, 1) !== null;
@@ -3389,16 +3423,24 @@ function renderMonthHistory(slideDir) {
 
   content.innerHTML =
     '<div style="padding: 0 24px;">' +
-      '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:8px;">' +
-        '<strong style="font-size:11px; color:var(--ink); text-transform:uppercase; letter-spacing:0.5px; font-weight:700; line-height:1.2;">' + monthName + '</strong>' +
-        '<b style="font: 800 16px \'Nunito\', sans-serif; color:var(--green); white-space:nowrap;">' + formatPos(net) + '</b>' +
+      '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px;">' +
+        '<div class="m-card-title">' + monthName + '</div>' +
+        '<div class="m-net-badge">' + formatPos(net) + '</div>' +
       '</div>' +
-      '<div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:10px;">' +
-        '<span style="color:var(--muted)">Доход: <b style="color:var(--green)">' + formatPos(stats.total) + '</b></span>' +
-        '<span style="color:var(--muted)">Расход: <b style="color:var(--red)">' + formatNeg(stats.exp) + '</b></span>' +
+      '<div class="m-line">' +
+        '<span>Доход</span><b style="color:var(--green)">' + formatPos(stats.total) + '</b>' +
       '</div>' +
-      '<div style="font-size:11px; color:var(--dim); border-top:1px dashed var(--line); padding-top:10px;">' +
-        'Клиенток: <b style="color:var(--ink)">' + stats.clients + '</b> (Ман: ' + stats.man + ', Пед: ' + stats.ped + ')' +
+      '<div class="m-line">' +
+        '<span>Расход</span><b style="color:var(--red)">' + formatNeg(stats.exp) + '</b>' +
+      '</div>' +
+      '<div class="m-stats-row">' +
+        '<span class="m-item">Клиенток: ' + stats.clients + '</span>' +
+        '<span class="m-div"></span>' +
+        '<span class="m-item">Маникюр: ' + stats.man + '</span>' +
+        '<span class="m-div"></span>' +
+        '<span class="m-item">Педикюр: ' + stats.ped + '</span>' +
+        '<span class="m-div"></span>' +
+        '<span class="m-item">Другое: ' + stats.other + '</span>' +
       '</div>' +
     '</div>';
 
@@ -3668,7 +3710,7 @@ function renderBigChart() {
     '</div>';
 }
 
-/* ====== Пирог «По услугам» — динамический по категориям прайса ====== */
+/* ====== Пирог ====== */
 function renderServicesPie() {
   const done = records.filter(function(r) { return r.status === 'done'; });
   
@@ -3876,28 +3918,33 @@ window.setTopServicesMode = function(mode) {
 };
 
 function renderMoney() {
-  let totalInc = 0, totalExp = 0, totalMan = 0, totalPed = 0;
+  let totalInc = 0, totalExp = 0;
+  let cntMan = 0, cntPed = 0, cntOther = 0;
+  const clientSet = new Set();
   
   records.forEach(function(r) {
-    if(r.status === 'done') {
-      const pPrice = Number(r.price) || 0;
-      const pExp = Number(r.expenses) || 0;
-      
-      const sLow = (r.service || '').toLowerCase();
-      let isPed = sLow.indexOf('педикюр') !== -1;
-      let isManEx = sLow.indexOf('маникюр') !== -1;
-      if (!isPed && !isManEx) isManEx = true; 
-      
-      totalInc += pPrice;
-      totalExp += pExp;
-      if (isPed) totalPed++; else totalMan++;
-    }
+    if (r.status !== 'done') return;
+    totalInc += Number(r.price) || 0;
+    totalExp += Number(r.expenses) || 0;
+    
+    const nm = (r.name || '').trim().toLowerCase();
+    if (nm) clientSet.add(nm);
+    
+    const cat = findCategoryForService(r.service);
+    if (cat === 'manicure') cntMan++;
+    else if (cat === 'pedicure') cntPed++;
+    else cntOther++;
   });
   
+  const net = totalInc - totalExp;
+  
+  el('mNetBadge').textContent = formatPos(net);
   el('mTotal').textContent = formatPos(totalInc);
   el('mExp').textContent = formatNeg(totalExp);
-  el('mCountManicure').textContent = 'Ман: ' + totalMan;
-  el('mCountPedicure').textContent = 'Пед: ' + totalPed;
+  el('mCountClients').textContent = clientSet.size;
+  el('mCountManicure').textContent = cntMan;
+  el('mCountPedicure').textContent = cntPed;
+  el('mCountOther').textContent = cntOther;
   
   renderMonthHistory();
   renderMonthCompare();
@@ -3978,7 +4025,7 @@ function renderPrice() {
   }
 }
 
-/* ===== Drag-and-drop разделов прайса (только в корне) ===== */
+/* ===== Drag-and-drop разделов прайса ===== */
 const DRAG_LONG_PRESS_MS = 600;
 let dragCtx = null;
 let suppressCatClick = false;
@@ -4084,11 +4131,9 @@ function onCatDragEnd(e) {
   const hoverIndex = ctx.hoverIndex;
   dragCtx = null;
 
-  /* подавляем следующий click */
   suppressCatClick = true;
   setTimeout(function() { suppressCatClick = false; }, 400);
 
-  /* Анимация «щёлк» — перетаскиваемая карточка плавно встаёт на место */
   const snapY = (hoverIndex - startIndex) * ctx.step;
   ctx.cards.forEach(function(c) {
     c.style.transition = 'transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s, box-shadow 0.2s';
@@ -4114,7 +4159,6 @@ function onCatDragEnd(e) {
   }, 210);
 }
 
-/* Навешиваем один раз на #priceList — делегирование */
 (function() {
   const list = el('priceList');
   if (!list) return;
@@ -4135,7 +4179,7 @@ function onCatDragEnd(e) {
   });
 })();
 
-/* ===== Разделы прайса (создать/редактировать/удалить) ===== */
+/* ===== Разделы прайса ===== */
 window.openCategorySheet = function() {
   el('categoryForm').reset();
   el('categorySheetTitle').textContent = 'Новый раздел';
@@ -4340,7 +4384,6 @@ el('confirmNo').onclick = function() {
   }
 };
 
-/* ====== Красивое информационное окошко ====== */
 window.showAlert = function(title, messageHtml, okText) {
   el('alertTitle').textContent = title || 'Внимание';
   el('alertText').innerHTML = messageHtml || '';
@@ -4487,7 +4530,6 @@ el('recordForm').onsubmit = function(e) {
   let finalDate = editingId ? el('fDate').value : el('fDateHidden').value;
   let finalTime = el('fTime').value;
 
-  // Проверка занятости времени
   if (finalDate && finalTime) {
     const conflict = records.find(function(r) {
       if (editingId && r.id === editingId) return false;
@@ -4865,8 +4907,6 @@ function renderAll() {
   renderNotes();
   renderBackupInfo();
   applyThemeSwitch();
-  /* Если сейчас открыт экран «Все записи / Ожидают» — обновим его содержимое,
-     чтобы изменения (имя, телефон, статус, сумма) сразу отразились на карточках */
   if (monthListState && el('screen-monthlist').classList.contains('active')) {
     refreshMonthListPage();
   }
