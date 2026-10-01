@@ -1430,7 +1430,7 @@ setTimeout(hideSplashScreen, 5000);
       <div class="scr-title">Доходы по месяцам</div>
       
       <div class="cal-card" style="margin-bottom:12px; padding:12px;">
-        <div style="font-size:10px; color:var(--ink); margin-bottom: 8px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">За всё время</div>
+        <div style="font-size:11px; color:var(--ink); margin-bottom: 8px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">За всё время</div>
         
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-size:13px;">
           <span style="color:var(--muted)">Общий доход</span><b class="price" id="mTotal" style="font-size:15px; color:var(--green)">+0 ₽</b>
@@ -1833,8 +1833,11 @@ let formStatus = 'plan';
 let topClientsMode = 'money';
 let topServicesMode = 'count';
 
-let compareMonthY = new Date().getFullYear();
-let compareMonthM = new Date().getMonth();
+/* compareMonthY/M — последний ЗАКРЫТЫЙ месяц (не текущий).
+   historyMonthY/M — текущий месяц (история показывает текущий месяц).
+   Начальные значения устанавливаются ниже, после загрузки records. */
+let compareMonthY = 0;
+let compareMonthM = 0;
 let historyMonthY = new Date().getFullYear();
 let historyMonthM = new Date().getMonth();
 const MAX_MONTHS_BACK = 24;
@@ -2321,6 +2324,37 @@ let editingServiceId = null;
    Используется в refreshMonthListPage() и renderAll(). */
 let monthListState = null;
 
+/* Инициализируем месяцы для аналитики.
+   compareMonth — последний ЗАКРЫТЫЙ месяц с данными (или просто последний закрытый).
+   historyMonth — текущий месяц. */
+(function initMonths() {
+  const now = new Date();
+  historyMonthY = now.getFullYear();
+  historyMonthM = now.getMonth();
+
+  const lc = getLastClosedMonth();
+  if (hasDoneInMonth(lc.y, lc.m)) {
+    compareMonthY = lc.y;
+    compareMonthM = lc.m;
+  } else {
+    // Ищем ближайший закрытый месяц с данными
+    let found = null;
+    let y = lc.y, m = lc.m;
+    for (let i = 0; i < MAX_MONTHS_BACK; i++) {
+      m -= 1;
+      if (m < 0) { m = 11; y--; }
+      if (hasDoneInMonth(y, m)) { found = { y: y, m: m }; break; }
+    }
+    if (found) {
+      compareMonthY = found.y;
+      compareMonthM = found.m;
+    } else {
+      compareMonthY = lc.y;
+      compareMonthM = lc.m;
+    }
+  }
+})();
+
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
 let selectedDate = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0];
@@ -2369,6 +2403,15 @@ const TROPHY_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" 
 
 const MONTHS_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 const MONTHS_INSTRUMENTAL = ['Январём','Февралём','Мартом','Апрелем','Маем','Июнем','Июлем','Августом','Сентябрём','Октябрём','Ноябрём','Декабрём'];
+
+/* Последний ЗАКРЫТЫЙ месяц (не текущий). Например, сейчас октябрь → вернёт сентябрь. */
+function getLastClosedMonth() {
+  const now = new Date();
+  let y = now.getFullYear();
+  let m = now.getMonth() - 1;
+  if (m < 0) { m = 11; y--; }
+  return { y: y, m: m };
+}
 
 function setFormStatus(val) {
   formStatus = (val === 'done' || val === 'cancel' || val === 'plan') ? val : 'plan';
@@ -2645,8 +2688,27 @@ function switchScreen(index, fromHistory) {
 
   if (targetScreen !== 'money') {
     const now = new Date();
-    compareMonthY = now.getFullYear();
-    compareMonthM = now.getMonth();
+    /* Сбрасываем карточку «Анализ дохода» в последний ЗАКРЫТЫЙ месяц */
+    const lc = getLastClosedMonth();
+    if (hasDoneInMonth(lc.y, lc.m)) {
+      compareMonthY = lc.y;
+      compareMonthM = lc.m;
+    } else {
+      let found = null;
+      let y = lc.y, m = lc.m;
+      for (let i = 0; i < MAX_MONTHS_BACK; i++) {
+        m -= 1;
+        if (m < 0) { m = 11; y--; }
+        if (hasDoneInMonth(y, m)) { found = { y: y, m: m }; break; }
+      }
+      if (found) {
+        compareMonthY = found.y;
+        compareMonthM = found.m;
+      } else {
+        compareMonthY = lc.y;
+        compareMonthM = lc.m;
+      }
+    }
     historyMonthY = now.getFullYear();
     historyMonthM = now.getMonth();
   }
@@ -3153,10 +3215,12 @@ function hasDoneInMonth(y, m) {
   return false;
 }
 
+/* Поиск месяца с данными в направлении dir, начиная со startY/startM.
+   ВАЖНО: не пускает вперёд за последний ЗАКРЫТЫЙ месяц (текущий незакрытый не показываем). */
 function findMonthWithData(startY, startM, dir) {
   let y = startY, m = startM;
-  const now = new Date();
-  const maxY = now.getFullYear(), maxM = now.getMonth();
+  const lc = getLastClosedMonth();
+  const maxY = lc.y, maxM = lc.m;
   for (let i = 0; i < MAX_MONTHS_BACK + 12; i++) {
     m += dir;
     if (m < 0) { m = 11; y--; }
@@ -3326,7 +3390,7 @@ function renderMonthHistory(slideDir) {
   content.innerHTML =
     '<div style="padding: 0 24px;">' +
       '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:8px;">' +
-        '<strong style="font-size:16px; color:var(--ink); line-height:1.2;">' + monthName + '</strong>' +
+        '<strong style="font-size:11px; color:var(--ink); text-transform:uppercase; letter-spacing:0.5px; font-weight:700; line-height:1.2;">' + monthName + '</strong>' +
         '<b style="font: 800 16px \'Nunito\', sans-serif; color:var(--green); white-space:nowrap;">' + formatPos(net) + '</b>' +
       '</div>' +
       '<div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:10px;">' +
