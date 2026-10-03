@@ -260,6 +260,23 @@ h1 .accent { color: var(--blue); }
 }
 .screen.active { opacity:1; visibility:visible; transform:none; }
 
+/* ===== Эффект переключения разделов: экран «въезжает» сбоку в сторону движения ===== */
+.screen.screen-in-right { animation: screenInRight 0.34s cubic-bezier(0.22, 1, 0.36, 1); }
+.screen.screen-in-left  { animation: screenInLeft 0.34s cubic-bezier(0.22, 1, 0.36, 1); }
+/* Важно: в анимации используется ТОЛЬКО transform, без opacity.
+   opacity на родителе создаёт отдельный слой, из-за которого backdrop-filter
+   карточек (стекло) берёт пустую подложку и появляется только после конца
+   анимации — карточки сначала прозрачные, потом "мутнеют". */
+@keyframes screenInRight {
+  from { transform: translateX(44px); }
+  to   { transform: translateX(0); }
+}
+@keyframes screenInLeft {
+  from { transform: translateX(-44px); }
+  to   { transform: translateX(0); }
+}
+/* Эффект переключения разделов показываем всегда (без учёта prefers-reduced-motion). */
+
 /* ===== Экран «Записи»: верхняя часть фиксирована, карточки скроллятся ===== */
 #screen-home {
   padding: 0;
@@ -2775,7 +2792,9 @@ function switchScreen(index, fromHistory) {
     popMonthlistHistory();
   }
 
-  const prevScreen = screensList[currentScreenIndex];
+  const prevIndex = currentScreenIndex;
+  const prevScreen = screensList[prevIndex];
+  const dir = index - prevIndex;
   if (!fromHistory && index !== currentScreenIndex) {
     pushNav({ level: 'screen', back: prevScreen });
   }
@@ -2827,6 +2846,15 @@ function switchScreen(index, fromHistory) {
     s.classList.toggle('active', s.id === 'screen-' + targetScreen); 
   });
   renderAll();
+  var transitionTarget = el('screen-' + targetScreen);
+  document.querySelectorAll('.screen').forEach(function(s) {
+    if (s !== transitionTarget) s.classList.remove('screen-in-right', 'screen-in-left');
+  });
+  if (transitionTarget && dir !== 0) {
+    transitionTarget.classList.remove('screen-in-right', 'screen-in-left');
+    void transitionTarget.offsetWidth;
+    transitionTarget.classList.add(dir > 0 ? 'screen-in-right' : 'screen-in-left');
+  }
   resetHomeScroll();
 
   if (targetScreen === 'money') {
