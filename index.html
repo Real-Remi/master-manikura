@@ -943,8 +943,8 @@ html.glass-panels .monthlist-close {
   transition: background 0.15s, color 0.15s;
   z-index: 3;
 }
-.month-nav.left { left: 2px; }
-.month-nav.right { right: 2px; }
+.month-nav.left { left: -6px; }
+.month-nav.right { right: -6px; }
 .month-nav.enabled { color: var(--muted); cursor: pointer; }
 .month-nav.enabled:active { background: var(--panel2); color: var(--ink); }
 .month-nav.disabled { color: var(--dim); cursor: default; opacity: 0.4; }
@@ -963,10 +963,11 @@ html.glass-panels .monthlist-close {
 .m-stats-row {
   padding-top: 8px;
   border-top: 1px dashed var(--line);
-  font-size: 11px;
+  font-size: 10px;
   color: var(--muted);
   text-align: center;
   line-height: 1.9;
+  white-space: nowrap;
 }
 .m-stats-row .m-item {
   display: inline-block;
@@ -977,7 +978,7 @@ html.glass-panels .monthlist-close {
   width: 0;
   height: 12px;
   border-left: 1px dashed var(--dim);
-  margin: 0 6px;
+  margin: 0 5px;
   vertical-align: middle;
 }
 
@@ -3547,16 +3548,16 @@ function renderMonthHistory(slideDir) {
   }
 
   content.innerHTML =
-    '<div style="padding: 0 24px;">' +
+    '<div style="padding: 0 4px;">' +
       '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px;">' +
         '<div class="m-card-title">' + monthName + '</div>' +
         '<div class="m-net-badge">' + formatPos(net) + '</div>' +
       '</div>' +
       '<div class="m-line">' +
-        '<span>Доход</span><b style="color:var(--green)">' + formatPos(stats.total) + '</b>' +
+        '<span>Общий доход</span><b style="color:var(--green)">' + formatPos(stats.total) + '</b>' +
       '</div>' +
       '<div class="m-line">' +
-        '<span>Расход</span><b style="color:var(--red)">' + formatNeg(stats.exp) + '</b>' +
+        '<span>Общие расходы</span><b style="color:var(--red)">' + formatNeg(stats.exp) + '</b>' +
       '</div>' +
       '<div class="m-stats-row">' +
         '<span class="m-item">Клиенток: ' + stats.clients + '</span>' +
