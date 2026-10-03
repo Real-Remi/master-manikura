@@ -159,6 +159,14 @@ body::before {
   -webkit-user-select: text;
   user-select: text;
 }
+/* Картинки не должны запускать нативное перетаскивание — иначе свайп мыши срывается */
+#app img {
+  -webkit-user-drag: none;
+  user-drag: none;
+}
+/* Курсор-«лапка» для перетаскивания фото в шторке приветствия */
+#welcomeCropView { cursor: grab; }
+#welcomeCropView.is-dragging { cursor: grabbing; }
 body.app-loading #app {
   opacity: 0;
   pointer-events: none;
@@ -2182,14 +2190,37 @@ document.getElementById('welcomeFileInput').addEventListener('change', function(
   const cropView = document.getElementById('welcomeCropView');
   if (!cropView) return;
 
+  function beginDrag(clientX, clientY) {
+    if (!welcomeEdit.loaded) return false;
+    welcomeTouch.dragging = true;
+    welcomeTouch.startX = clientX;
+    welcomeTouch.startY = clientY;
+    welcomeTouch.startOffX = welcomeEdit.x;
+    welcomeTouch.startOffY = welcomeEdit.y;
+    return true;
+  }
+
+  function moveDrag(clientX, clientY) {
+    if (!welcomeTouch.dragging) return false;
+    welcomeEdit.x = welcomeTouch.startOffX + (clientX - welcomeTouch.startX);
+    welcomeEdit.y = welcomeTouch.startOffY + (clientY - welcomeTouch.startY);
+    applyWelcomeTransform();
+    return true;
+  }
+
+  function zoomBy(factor) {
+    if (!welcomeEdit.loaded) return;
+    let ns = welcomeEdit.scale * factor;
+    ns = Math.max(welcomeCoverScale, Math.min(welcomeCoverScale * 5, ns));
+    welcomeEdit.scale = ns;
+    applyWelcomeTransform();
+  }
+
+  /* --- Сенсорный ввод (палец): перетаскивание и пинч-зум --- */
   cropView.addEventListener('touchstart', function(e) {
     if (!welcomeEdit.loaded) return;
     if (e.touches.length === 1) {
-      welcomeTouch.dragging = true;
-      welcomeTouch.startX = e.touches[0].clientX;
-      welcomeTouch.startY = e.touches[0].clientY;
-      welcomeTouch.startOffX = welcomeEdit.x;
-      welcomeTouch.startOffY = welcomeEdit.y;
+      beginDrag(e.touches[0].clientX, e.touches[0].clientY);
       e.preventDefault();
     } else if (e.touches.length === 2) {
       welcomeTouch.dragging = false;
@@ -2204,11 +2235,7 @@ document.getElementById('welcomeFileInput').addEventListener('change', function(
   cropView.addEventListener('touchmove', function(e) {
     if (!welcomeEdit.loaded) return;
     if (welcomeTouch.dragging && e.touches.length === 1) {
-      const curX = e.touches[0].clientX;
-      const curY = e.touches[0].clientY;
-      welcomeEdit.x = welcomeTouch.startOffX + (curX - welcomeTouch.startX);
-      welcomeEdit.y = welcomeTouch.startOffY + (curY - welcomeTouch.startY);
-      applyWelcomeTransform();
+      moveDrag(e.touches[0].clientX, e.touches[0].clientY);
       e.preventDefault();
     } else if (welcomeTouch.pinching && e.touches.length === 2) {
       const t1 = e.touches[0], t2 = e.touches[1];
@@ -2227,11 +2254,7 @@ document.getElementById('welcomeFileInput').addEventListener('change', function(
       welcomeTouch.pinching = false;
     } else if (e.touches.length === 1) {
       welcomeTouch.pinching = false;
-      welcomeTouch.dragging = true;
-      welcomeTouch.startX = e.touches[0].clientX;
-      welcomeTouch.startY = e.touches[0].clientY;
-      welcomeTouch.startOffX = welcomeEdit.x;
-      welcomeTouch.startOffY = welcomeEdit.y;
+      beginDrag(e.touches[0].clientX, e.touches[0].clientY);
     }
   }, { passive: true });
 
@@ -2239,6 +2262,38 @@ document.getElementById('welcomeFileInput').addEventListener('change', function(
     welcomeTouch.dragging = false;
     welcomeTouch.pinching = false;
   });
+
+  /* --- Мышь/трекпад на ПК: перетаскивание картинки и зум колесом --- */
+  cropView.addEventListener('pointerdown', function(e) {
+    if (e.pointerType !== 'mouse' || e.button !== 0) return;
+    if (beginDrag(e.clientX, e.clientY)) {
+      cropView.classList.add('is-dragging');
+      e.preventDefault();
+    }
+  });
+
+  cropView.addEventListener('pointermove', function(e) {
+    if (e.pointerType !== 'mouse') return;
+    if (moveDrag(e.clientX, e.clientY)) e.preventDefault();
+  });
+
+  cropView.addEventListener('pointerup', function(e) {
+    if (e.pointerType !== 'mouse') return;
+    welcomeTouch.dragging = false;
+    cropView.classList.remove('is-dragging');
+  });
+
+  cropView.addEventListener('pointercancel', function(e) {
+    if (e.pointerType !== 'mouse') return;
+    welcomeTouch.dragging = false;
+    cropView.classList.remove('is-dragging');
+  });
+
+  cropView.addEventListener('wheel', function(e) {
+    if (!welcomeEdit.loaded) return;
+    e.preventDefault();
+    zoomBy(e.deltaY < 0 ? 1.1 : 1 / 1.1);
+  }, { passive: false });
 })();
 
 function rasterizeWelcomePhoto() {
@@ -2792,7 +2847,25 @@ document.querySelectorAll('.tab-btn').forEach(function(btn, idx) {
 function applySwipe(element, onSwipeLeft, onSwipeRight, options) {
   options = options || {};
   let startX = 0, startY = 0, startTime = 0, isTracking = false;
-  
+
+  function isTypingTarget(target) {
+    if (!target || !target.tagName) return false;
+    const tag = target.tagName.toLowerCase();
+    return tag === 'input' || tag === 'textarea' || tag === 'select' || target.isContentEditable === true;
+  }
+
+  function finishSwipe(clientX, clientY, e) {
+    if (!isTracking) return;
+    isTracking = false;
+    const diffX = clientX - startX;
+    const diffY = clientY - startY;
+    if (Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY) * 1.5 && (Date.now() - startTime) < 800) {
+      if (options.stop && e) e.stopPropagation();
+      if (diffX < 0) onSwipeLeft(); else onSwipeRight();
+    }
+  }
+
+  /* --- Сенсорный ввод (палец) — как было --- */
   element.addEventListener('touchstart', function(e) {
     if (e.touches.length !== 1) { isTracking = false; return; }
     startX = e.touches[0].clientX;
@@ -2800,19 +2873,40 @@ function applySwipe(element, onSwipeLeft, onSwipeRight, options) {
     startTime = Date.now();
     isTracking = true;
   }, {passive: true});
-  
+
   element.addEventListener('touchend', function(e) {
-    if (!isTracking) return;
-    isTracking = false;
-    let diffX = e.changedTouches[0].clientX - startX;
-    let diffY = e.changedTouches[0].clientY - startY;
-    
-    if (Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY) * 1.5 && (Date.now() - startTime) < 800) {
-      if (options.stop) e.stopPropagation();
-      if (diffX < 0) onSwipeLeft(); else onSwipeRight();
-    }
+    finishSwipe(e.changedTouches[0].clientX, e.changedTouches[0].clientY, e);
   }, {passive: true});
+
+  element.addEventListener('touchcancel', function() {
+    isTracking = false;
+  });
+
+  /* --- Мышь/трекпад на ПК: тянем левой кнопкой, как пальцем --- */
+  element.addEventListener('pointerdown', function(e) {
+    if (e.pointerType !== 'mouse' || e.button !== 0) return;
+    if (isTypingTarget(e.target)) { isTracking = false; return; }
+    startX = e.clientX;
+    startY = e.clientY;
+    startTime = Date.now();
+    isTracking = true;
+  });
+
+  element.addEventListener('pointerup', function(e) {
+    if (e.pointerType !== 'mouse') return;
+    finishSwipe(e.clientX, e.clientY, e);
+  });
+
+  element.addEventListener('pointercancel', function(e) {
+    if (e.pointerType !== 'mouse') return;
+    isTracking = false;
+  });
 }
+
+/* Не даём картинкам запускать нативное перетаскивание — иначе свайп мышью срывается */
+document.addEventListener('dragstart', function(e) {
+  if (e.target && e.target.tagName === 'IMG') e.preventDefault();
+});
 
 applySwipe(el('main'), 
   function() {
@@ -4029,6 +4123,7 @@ function renderPrice() {
 const DRAG_LONG_PRESS_MS = 600;
 let dragCtx = null;
 let suppressCatClick = false;
+let catMouseDown = false;
 
 function getPriceCategoryCards() {
   if (currentPriceCategory !== null) return [];
@@ -4037,23 +4132,18 @@ function getPriceCategoryCards() {
   return Array.prototype.slice.call(list.querySelectorAll('.price-card'));
 }
 
-function onCatDragStart(e) {
+function catDragStart(clientX, clientY, target, mode) {
   if (currentPriceCategory !== null) return;
-  if (e.touches.length !== 1) return;
-  const target = e.target.closest('.price-card');
-  if (!target) return;
-  if (e.target.closest('.pc-edit')) return;
-
   const cards = getPriceCategoryCards();
   const idx = cards.indexOf(target);
   if (idx < 0) return;
 
-  const t = e.touches[0];
   dragCtx = {
     started: false,
     active: false,
-    startX: t.clientX,
-    startY: t.clientY,
+    mode: mode || 'touch',
+    startX: clientX,
+    startY: clientY,
     startIndex: idx,
     hoverIndex: idx,
     cardEl: target,
@@ -4072,21 +4162,36 @@ function onCatDragStart(e) {
   }, DRAG_LONG_PRESS_MS);
 }
 
-function onCatDragMove(e) {
-  if (!dragCtx) return;
-  const t = e.touches[0];
-  const dx = t.clientX - dragCtx.startX;
-  const dy = t.clientY - dragCtx.startY;
+function catDragMove(clientX, clientY) {
+  if (!dragCtx) return false;
+  const dx = clientX - dragCtx.startX;
+  const dy = clientY - dragCtx.startY;
 
   if (!dragCtx.active) {
-    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
-      clearTimeout(dragCtx.timer);
-      dragCtx = null;
+    if (dragCtx.mode === 'mouse') {
+      if (Math.abs(dx) > 8 && Math.abs(dx) >= Math.abs(dy)) {
+        clearTimeout(dragCtx.timer);
+        dragCtx = null;
+        return false;
+      }
+      if (Math.abs(dy) > 8) {
+        clearTimeout(dragCtx.timer);
+        dragCtx.active = true;
+        dragCtx.cardEl.classList.add('dragging');
+        haptic(30);
+      } else {
+        return false;
+      }
+    } else {
+      if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+        clearTimeout(dragCtx.timer);
+        dragCtx = null;
+      }
+      return false;
     }
-    return;
   }
 
-  e.preventDefault();
+  if (!dragCtx) return false;
 
   dragCtx.offsetY = dy;
   dragCtx.cardEl.style.transform = 'translateY(' + dy + 'px) scale(1.03)';
@@ -4101,6 +4206,7 @@ function onCatDragMove(e) {
     applyCatDragShifts();
     haptic(15);
   }
+  return true;
 }
 
 function applyCatDragShifts() {
@@ -4117,7 +4223,7 @@ function applyCatDragShifts() {
   });
 }
 
-function onCatDragEnd(e) {
+function catDragEnd() {
   if (!dragCtx) return;
   clearTimeout(dragCtx.timer);
 
@@ -4159,23 +4265,71 @@ function onCatDragEnd(e) {
   }, 210);
 }
 
+function catDragCancel() {
+  if (!dragCtx) return;
+  clearTimeout(dragCtx.timer);
+  if (dragCtx.active) {
+    dragCtx.cards.forEach(function(c) {
+      c.classList.remove('dragging');
+      c.style.transform = '';
+      c.style.transition = '';
+    });
+  }
+  dragCtx = null;
+}
+
 (function() {
   const list = el('priceList');
   if (!list) return;
-  list.addEventListener('touchstart', onCatDragStart, { passive: true });
-  list.addEventListener('touchmove', onCatDragMove, { passive: false });
-  list.addEventListener('touchend', onCatDragEnd);
-  list.addEventListener('touchcancel', function() {
+
+  function targetFromEvent(e) {
+    const target = e.target.closest ? e.target.closest('.price-card') : null;
+    if (!target) return null;
+    if (e.target.closest('.pc-edit')) return null;
+    return target;
+  }
+
+  /* --- Сенсорный ввод (палец) --- */
+  list.addEventListener('touchstart', function(e) {
+    if (e.touches.length !== 1) return;
+    const target = targetFromEvent(e);
+    if (!target) return;
+    catDragStart(e.touches[0].clientX, e.touches[0].clientY, target, 'touch');
+  }, { passive: true });
+
+  list.addEventListener('touchmove', function(e) {
     if (!dragCtx) return;
-    clearTimeout(dragCtx.timer);
-    if (dragCtx.active) {
-      dragCtx.cards.forEach(function(c) {
-        c.classList.remove('dragging');
-        c.style.transform = '';
-        c.style.transition = '';
-      });
-    }
-    dragCtx = null;
+    if (catDragMove(e.touches[0].clientX, e.touches[0].clientY)) e.preventDefault();
+  }, { passive: false });
+
+  list.addEventListener('touchend', catDragEnd);
+  list.addEventListener('touchcancel', catDragCancel);
+
+  /* --- Мышь/трекпад на ПК --- */
+  list.addEventListener('pointerdown', function(e) {
+    if (e.pointerType !== 'mouse' || e.button !== 0) return;
+    const target = targetFromEvent(e);
+    if (!target) return;
+    catMouseDown = true;
+    catDragStart(e.clientX, e.clientY, target, 'mouse');
+  });
+
+  window.addEventListener('pointermove', function(e) {
+    if (e.pointerType !== 'mouse' || !catMouseDown) return;
+    if (!dragCtx) return;
+    catDragMove(e.clientX, e.clientY);
+  });
+
+  window.addEventListener('pointerup', function(e) {
+    if (e.pointerType !== 'mouse' || !catMouseDown) return;
+    catMouseDown = false;
+    catDragEnd();
+  });
+
+  window.addEventListener('pointercancel', function(e) {
+    if (e.pointerType !== 'mouse' || !catMouseDown) return;
+    catMouseDown = false;
+    catDragCancel();
   });
 })();
 
