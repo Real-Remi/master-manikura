@@ -1,5 +1,6 @@
 Приложение "Мастер маникюра", запись клиентов, полный анализ дохода. Работает на android и iOS 
 
+<img width="220" height="449" alt="Google-Pixel5-real-remi github io (00)" src="https://github.com/user-attachments/assets/437fcd64-c2cc-4885-abeb-ffe71abab954" />
 <img width="220" height="449" alt="Google-Pixel5-real-remi github io (0)" src="https://github.com/user-attachments/assets/b4b21d55-57ee-487e-b6f7-3b5caa44854c" />
 <img width="220" height="449" alt="Google-Pixel5-real-remi github io (1)" src="https://github.com/user-attachments/assets/76628176-63d6-4b87-a98d-979ed19f6422" />
 <img width="220" height="449" alt="Google-Pixel5-real-remi github io (2)" src="https://github.com/user-attachments/assets/b0a28487-e404-41b1-a1cf-de4548957421" />
