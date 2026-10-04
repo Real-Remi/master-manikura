@@ -3108,8 +3108,8 @@ function renderHome() {
   
   sorted.forEach(function(r) {
     if (r.date === today && r.status !== 'cancel') {
-      todayCount++;
       if (r.status === 'done') todayNet += (Number(r.price) || 0) - (Number(r.expenses) || 0);
+      else todayCount++;
     }
   });
   
@@ -3133,10 +3133,13 @@ function renderHome() {
   el('homeListTitle').textContent = 'Ближайшие записи';
   
   const todayRecords = sorted.filter(function(r) {
-    return r.date === today && r.status !== 'cancel';
+    return r.date === today && r.status === 'plan';
   });
-  const tomorrowRecords = sorted.filter(function(r) {
+  const tomorrowActive = sorted.filter(function(r) {
     return r.date === tomorrow && r.status !== 'cancel';
+  });
+  const tomorrowRecords = tomorrowActive.filter(function(r) {
+    return r.status === 'plan';
   });
   
   let listHTML = '';
@@ -3149,7 +3152,7 @@ function renderHome() {
   listHTML += '<div class="home-section-title">' + formatHomeSectionTitle(tomorrow, today, tomorrow) + '</div>';
   if (tomorrowRecords.length) {
     listHTML += tomorrowRecords.map(renderCard).join('');
-  } else {
+  } else if (!tomorrowActive.length) {
     listHTML += renderDayOffCard(tomorrow);
   }
   
