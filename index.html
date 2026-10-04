@@ -4990,7 +4990,9 @@ window.exportData = function() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "NailDiary_Backup_" + new Date().toISOString().slice(0,10) + ".json";
+    const d = new Date();
+    const pad = function(v) { return String(v).padStart(2, '0'); };
+    a.download = "База клиентов (" + pad(d.getDate()) + "." + pad(d.getMonth() + 1) + "." + String(d.getFullYear()).slice(-2) + ").json";
     a.style.display = "none";
     document.body.appendChild(a);
     a.click();
