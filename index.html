@@ -33,10 +33,30 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" id="metaTheme" content="#18161a">
 <title>Мастер&#160;маникюра</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
+/* ===== Локальный шрифт Nunito (офлайн) ===== */
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('fonts/nunito-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('fonts/nunito-700.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('fonts/nunito-800.woff2') format('woff2');
+}
+
 :root {
   --bg: #18161a; 
   --panel: #1f1e22; 
@@ -5111,10 +5131,10 @@ renderAll();
 <script>
 (function () {
   if (!('serviceWorker' in navigator) || location.protocol === 'file:') return;
-  window.addEventListener('load', function() {
-    navigator.serviceWorker.register('sw.js').catch(function (err) {
-      console.warn('ServiceWorker не зарегистрирован:', err);
-    });
+  // Регистрируем сразу, не ждём события 'load' —
+  // иначе SW может не успеть встать при холодном запуске TWA.
+  navigator.serviceWorker.register('sw.js').catch(function (err) {
+    console.warn('ServiceWorker не зарегистрирован:', err);
   });
 })();
 </script>
